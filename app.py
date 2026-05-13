@@ -1,10 +1,10 @@
 import streamlit as st
 import pandas as pd
 
-# 1. SAYFA YAPILANDIRMASI VE PROFESYONEL UI (CSS)
+# 1. SAYFA YAPILANDIRMASI VE PROFESYONEL UI (CSS) (GÜNCELLENDİ)
 st.set_page_config(page_title="RAN Analytics", layout="wide")
 
-# Modern, kurumsal ve ferah bir tasarım için CSS
+# Modern, kurumsal ve ferah bir tasarım için CSS (Logo için güncellendi)
 st.markdown("""
     <style>
     /* Ana Arka Plan */
@@ -12,12 +12,25 @@ st.markdown("""
         background-color: #f8f9fa;
     }
     
-    /* Başlıklar ve Fontlar */
+    /* Başlık Alanı (Logo ve Yazı Yan Yana) */
+    .header-container {
+        display: flex;
+        align-items: center;
+        gap: 20px; /* Logo ve yazı arasındaki boşluk */
+        margin-bottom: 20px;
+    }
+
+    .header-logo {
+        height: 60px; /* Logo yüksekliği */
+        border-radius: 8px; /* İsteğe bağlı yuvarlatılmış köşe */
+    }
+
     h1 {
         color: #1e3a8a !important; /* Kurumsal Lacivert */
         font-family: 'Inter', sans-serif;
         font-weight: 700;
         letter-spacing: -0.02em;
+        margin: 0; /* Boşluğu kaldır */
     }
     
     h3 {
@@ -86,7 +99,7 @@ texts = {
         "sidebar_header": "Parameters",
         "test_type": "Test Module",
         "age": "Student Age (Months)",
-        "score": "Completion Time (Seconds)",
+        "score": "Test Duration (Seconds)",
         "test_options": ["Shape", "Color", "Number"],
         "error_file": "System Error: Database could not be loaded!",
         "error_age": "No norm data found for the selected age segment.",
@@ -106,10 +119,21 @@ texts = {
 lang = st.sidebar.radio(texts["TR"]["sidebar_lang"], ["TR", "EN"])
 t = texts[lang]
 
-st.title(t["title"])
+# --- BAŞLIK ALANI (GÜNCELLENDİ: Logo eklendi) ---
+# RAN testlerinin ikonik görselini buraya yerleştiriyoruz (Örn: image_1.png)
+logo_url = "https://support.renaissance.com/servlet/rtaImage?eid=ka0Nx00000073KX&feoid=00NQg000006K5pm&refid=0EMQg00000IutXM" # Renkli matris
+
+# CSS ve HTML kullanarak logo ve yazıyı yan yana koyma
+st.markdown(f"""
+    <div class="header-container">
+        <img src="{logo_url}" class="header-logo" alt="RAN Test Icon">
+        <h1>{t["title"]}</h1>
+    </div>
+    """, unsafe_allow_html=True)
+
 st.write(t["subtitle"])
 
-# 4. VERİ YÜKLEME
+# 4. VERİ YÜKLEME (Değişmedi)
 @st.cache_data
 def load_data():
     try:
@@ -124,7 +148,7 @@ def load_data():
 norms = load_data()
 
 if norms:
-    # 5. YAN PANEL
+    # 5. YAN PANEL (Değişmedi)
     st.sidebar.divider()
     st.sidebar.subheader(t["sidebar_header"])
     
@@ -135,7 +159,7 @@ if norms:
     yas_ay = st.sidebar.slider(t["age"], 70, 82, 75)
     ham_sure = st.sidebar.number_input(t["score"], 20, 150, 60)
 
-    # 6. HESAPLAMA MANTIĞI (Korumalı)
+    # 6. HESAPLAMA MANTIĞI (HİÇ DEĞİŞMEDİ)
     df_secili = norms[test_tipi]
     df_yas = df_secili[df_secili['Aylik_Yas'] == yas_ay].copy()
 
@@ -156,7 +180,7 @@ if norms:
         else:
             durum = t["cat_normal"]; renk_kod = "blue"
 
-        # 7. GÖRSEL SONUÇ PANELİ
+        # 7. GÖRSEL SONUÇ PANELİ (Değişmedi)
         st.divider()
         st.subheader(t['eval_header'])
         
