@@ -1,76 +1,104 @@
 import streamlit as st
 import pandas as pd
 
-# 1. SAYFA YAPILANDIRMASI VE ÖZEL TASARIM (CSS)
-st.set_page_config(page_title="RAN Scoring / Puanlama", layout="wide")
+# 1. SAYFA YAPILANDIRMASI VE PROFESYONEL UI (CSS)
+st.set_page_config(page_title="RAN Analytics", layout="wide")
 
-# Okul tahtası deseni ve tebeşir beyazı yazı tipi ayarları
+# Modern, kurumsal ve ferah bir tasarım için CSS
 st.markdown("""
     <style>
+    /* Ana Arka Plan */
     .stApp {
-        background-color: #0d2b1d;
-        background-image: url("https://www.transparenttextures.com/patterns/black-chalkboard.png");
-        color: #ffffff;
+        background-color: #f8f9fa;
     }
-    h1, h2, h3, p, label, .stMetric, span {
-        color: #ffffff !important;
-        font-family: 'Comic Sans MS', cursive, sans-serif; /* Daha "el yazısı" hissi için */
+    
+    /* Başlıklar ve Fontlar */
+    h1 {
+        color: #1e3a8a !important; /* Kurumsal Lacivert */
+        font-family: 'Inter', sans-serif;
+        font-weight: 700;
+        letter-spacing: -0.02em;
     }
-    .stSidebar {
-        background-color: rgba(255, 255, 255, 0.1);
+    
+    h3 {
+        color: #334155 !important;
+        font-weight: 600;
     }
-    .stNumberInput input, .stSelectbox div {
-        color: #000000 !important; /* Giriş kutularının içi okunabilirlik için siyah kalsın */
+
+    /* Sidebar Tasarımı */
+    [data-testid="stSidebar"] {
+        background-color: #ffffff;
+        border-right: 1px solid #e2e8f0;
     }
+    
+    /* Metrik Kartları Özelleştirme */
+    [data-testid="stMetricValue"] {
+        color: #2563eb !important; /* Profesyonel Mavi */
+        font-size: 1.8rem !important;
+    }
+    
+    /* Bilgi Kutuları (st.info) */
+    .stAlert {
+        border-radius: 12px;
+        border: none;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Divider Çizgisi */
     hr {
-        border-top: 2px dashed #ffffff !important;
+        border-top: 1px solid #cbd5e1 !important;
+    }
+    
+    /* Giriş Elemanları */
+    .stNumberInput div, .stSelectbox div {
+        border-radius: 8px !important;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# 2. DİL SEÇENEKLERİ SÖZLÜĞÜ
+# 2. DİL SEÇENEKLERİ SÖZLÜĞÜ (Değişmedi)
 texts = {
     "TR": {
-        "title": "🎯 RAN Testi Otomatik Puanlama",
-        "subtitle": "Hızlı Otomatik İsimlendirme (RAN) Laboratuvarı",
-        "sidebar_lang": "Dil / Language",
-        "sidebar_header": "Öğrenci Bilgileri",
-        "test_type": "Test Türü",
+        "title": "RAN Analytics System",
+        "subtitle": "Hızlı Otomatik İsimlendirme (RAN) Klinik Karar Destek Aracı",
+        "sidebar_lang": "Uygulama Dili / App Language",
+        "sidebar_header": "Parametreler",
+        "test_type": "Test Modülü",
         "age": "Öğrenci Yaşı (Ay)",
-        "score": "Test Süresi (Saniye)",
+        "score": "Tamamlama Süresi (Saniye)",
         "test_options": ["Şekil", "Renk", "Sayı"],
-        "error_file": "Hata: Dosyalar yüklenemedi!",
-        "error_age": "Seçilen yaş için norm tablosunda veri bulunamadı.",
-        "eval_header": "Değerlendirme",
-        "cat_heavy": "🔴 AĞIR RİSK: Çok Yavaş",
-        "cat_risk": "🟡 RİSKLİ: Yavaş",
-        "cat_superior": "🟢 ÜSTÜN: Çok Hızlı",
-        "cat_normal": "🔵 NORMAL: Beklenen",
-        "metric_t": "T-Puanı",
-        "metric_p": "Yüzdelik Dilim",
-        "metric_r": "Ham Süre",
-        "comment": "Yorum: {age} aylık bir çocuk için {test} testinde {score} saniyelik performans, yaşıtlarının %{perc:.1f}'inden daha iyidir."
+        "error_file": "Sistem Hatası: Veri tabanı yüklenemedi!",
+        "error_age": "Seçilen yaş segmenti için norm verisi bulunamadı.",
+        "eval_header": "Analitik Sonuçlar",
+        "cat_heavy": "🔴 Kritik: Çok Yavaş",
+        "cat_risk": "🟡 Risk: Yavaş",
+        "cat_superior": "🟢 Üstün: Çok Hızlı",
+        "cat_normal": "🔵 Standart: Beklenen Gelişim",
+        "metric_t": "T-Skoru",
+        "metric_p": "Persentil (Yüzdelik)",
+        "metric_r": "Ham Veri (sn)",
+        "comment": "Analiz: {age} aylık örneklemde {test} testi için {score} saniyelik performans, popülasyonun %{perc:.1f}'inden daha efektif bir hıza işaret eder."
     },
     "EN": {
-        "title": "🎯 RAN Test Automatic Scoring",
-        "subtitle": "Rapid Automatized Naming (RAN) Lab",
-        "sidebar_lang": "Language / Dil",
-        "sidebar_header": "Student Information",
-        "test_type": "Test Type",
+        "title": "RAN Analytics System",
+        "subtitle": "Rapid Automatized Naming (RAN) Clinical Decision Support Tool",
+        "sidebar_lang": "App Language / Uygulama Dili",
+        "sidebar_header": "Parameters",
+        "test_type": "Test Module",
         "age": "Student Age (Months)",
-        "score": "Test Duration (Seconds)",
+        "score": "Completion Time (Seconds)",
         "test_options": ["Shape", "Color", "Number"],
-        "error_file": "Error: Files could not be loaded!",
-        "error_age": "No data found for the selected age in the norm table.",
-        "eval_header": "Evaluation",
-        "cat_heavy": "🔴 SEVERE RISK: Very Slow",
-        "cat_risk": "🟡 AT RISK: Slow",
-        "cat_superior": "🟢 SUPERIOR: Very Fast",
-        "cat_normal": "🔵 NORMAL: Expected",
+        "error_file": "System Error: Database could not be loaded!",
+        "error_age": "No norm data found for the selected age segment.",
+        "eval_header": "Analytical Results",
+        "cat_heavy": "🔴 Critical: Very Slow",
+        "cat_risk": "🟡 At Risk: Slow",
+        "cat_superior": "🟢 Superior: Very Fast",
+        "cat_normal": "🔵 Standard: Expected Development",
         "metric_t": "T-Score",
         "metric_p": "Percentile",
-        "metric_r": "Raw Time",
-        "comment": "Comment: For a {age}-month-old child, a performance of {score} seconds in the {test} test is better than {perc:.1f}% of their peers."
+        "metric_r": "Raw Time (sec)",
+        "comment": "Analysis: For a {age}-month-old sample, a performance of {score}s in the {test} test indicates a velocity more effective than {perc:.1f}% of the population."
     }
 }
 
@@ -90,15 +118,15 @@ def load_data():
         sayi = pd.read_csv("RAN_Sayi_Tum_Aylar_Norm_Tablosu.csv")
         return {"Şekil": sekil, "Renk": renk, "Sayı": sayi}
     except Exception as e:
-        st.error(f"{t['error_file']} Details: {e}")
+        st.error(f"{t['error_file']} Log: {e}")
         return None
 
 norms = load_data()
 
 if norms:
-    # 5. YAN PANEL (Girişler)
+    # 5. YAN PANEL
     st.sidebar.divider()
-    st.sidebar.header(t["sidebar_header"])
+    st.sidebar.subheader(t["sidebar_header"])
     
     test_mapping = {t["test_options"][0]: "Şekil", t["test_options"][1]: "Renk", t["test_options"][2]: "Sayı"}
     secilen_etiket = st.sidebar.selectbox(t["test_type"], t["test_options"])
@@ -107,7 +135,7 @@ if norms:
     yas_ay = st.sidebar.slider(t["age"], 70, 82, 75)
     ham_sure = st.sidebar.number_input(t["score"], 20, 150, 60)
 
-    # 6. HESAPLAMA MANTIĞI (HİÇ DEĞİŞMEDİ)
+    # 6. HESAPLAMA MANTIĞI (Korumalı)
     df_secili = norms[test_tipi]
     df_yas = df_secili[df_secili['Aylik_Yas'] == yas_ay].copy()
 
@@ -128,15 +156,20 @@ if norms:
         else:
             durum = t["cat_normal"]; renk_kod = "blue"
 
-        # 7. GÖRSEL SONUÇ EKRANI
+        # 7. GÖRSEL SONUÇ PANELİ
         st.divider()
-        st.markdown(f"### {t['eval_header']}: :{renk_kod}[{durum}]")
+        st.subheader(t['eval_header'])
         
-        col1, col2, col3 = st.columns(3)
-        col1.metric(t["metric_t"], f"{t_puani:.2f}")
-        col2.metric(t["metric_p"], f"%{yuzdelik:.1f}")
-        col3.metric(t["metric_r"], f"{ham_sure} sn")
+        # Sonuç Metrikleri
+        m_col1, m_col2, m_col3 = st.columns(3)
+        with m_col1:
+            st.metric(t["metric_t"], f"{t_puani:.2f}")
+        with m_col2:
+            st.metric(t["metric_p"], f"%{yuzdelik:.1f}")
+        with m_col3:
+            st.metric(t["metric_r"], f"{ham_sure}")
 
-        st.info(t["comment"].format(age=yas_ay, test=secilen_etiket, score=ham_sure, perc=yuzdelik))
+        # Durum Kartı
+        st.info(f"**{durum}**\n\n{t['comment'].format(age=yas_ay, test=secilen_etiket, score=ham_sure, perc=yuzdelik)}")
     else:
         st.warning(t["error_age"])
