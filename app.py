@@ -28,23 +28,27 @@ if norms:
     yas_ay = st.sidebar.slider("Öğrenci Yaşı (Ay)", 70, 82, 75)
     ham_sure = st.sidebar.number_input("Test Süresi (Saniye)", 20, 150, 60)
 
-    # 3. HESAPLAMA MANTIĞI
-    df_secili = norms[test_tipi]
-    sonuc = df_secili[(df_secili['Aylik_Yas'] == yas_ay) & (df_secili['raw'] == ham_sure)]
+    # 3. HESAPLAMA MANTIĞI (GÜNCELLENDİ)
+df_secili = norms[test_tipi]
 
-    if not sonuc.empty:
-        t_puani = sonuc.iloc[0]['norm']
-        yuzdelik = sonuc.iloc[0]['percentile']
+# Sadece seçilen yaşa ait verileri filtreleyelim
+df_yas = df_secili[df_secili['Aylik_Yas'] == yas_ay].copy()
 
-        # Kategori Belirleme
-        if t_puani <= 30:
-            durum, renk_kod = "🔴 AĞIR RİSK: Çok Yavaş", "red"
-        elif t_puani <= 40:
-            durum, renk_kod = "🟡 RİSKLİ: Yavaş", "orange"
-        elif t_puani >= 60:
-            durum, renk_kod = "🟢 ÜSTÜN: Çok Hızlı", "green"
-        else:
-            durum, renk_kod = "🔵 NORMAL: Beklenen", "blue"
+# 'raw' sütunundaki "100 - 94" gibi metinleri temizleyip sayıya çevirelim
+# Sayıya çevrilemeyenleri (metinleri) NaN yapar
+df_yas['raw_numeric'] = pd.to_numeric(df_yas['raw'], errors='coerce')
+
+# Eğer tam eşleşme yoksa, girilen saniyeye EN YAKIN satırı bulalım
+# Bu sayede "karşılık bulunamadı" hatası almazsınız
+if not df_yas.empty:
+    # Kullanıcın girdiği saniyeye en yakın olan satırın indeksini bul
+    idx = (df_yas['raw_numeric'] - ham_sure).abs().idxmin()
+    sonuc_satiri = df_yas.loc[idx]
+    
+    t_puani = sonuc_satiri['norm']
+    yuzdelik = sonuc_satiri['percentile']
+    
+    # ... (Geri kalan görselleştirme kodlarınız aynı kalabilir)
 
         # 4. GÖRSEL SONUÇ EKRANI
         st.divider()
