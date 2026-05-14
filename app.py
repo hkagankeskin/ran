@@ -106,10 +106,7 @@ if norms:
             st.image("duzce.svg", width=80)
         with l_col3:
             st.image("Rlogo.svg", width=80)
-        with l_col4:
-            st.image("uri1.jpg", width=110)
-        with l_col5:
-            st.image("uri2.jpg", width=110)
+        
 
         # --- 8. AKADEMİK ATIF NOTU ---
         st.write("") 
