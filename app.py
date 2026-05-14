@@ -69,7 +69,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 2. DİL SEÇENEKLERİ SÖZLÜĞÜ (Tablo Başlıkları Eklendi)
+# 2. DİL SEÇENEKLERİ SÖZLÜĞÜ (Referans tablosu metinleri eklendi)
 texts = {
     "TR": {
         "title": "RAN Analytics System",
@@ -91,9 +91,9 @@ texts = {
         "metric_p": "Persentil (Yüzdelik)",
         "metric_r": "Ham Veri (sn)",
         "comment": "Analiz: {age} aylık örneklemde {test} testi için {score} saniyelik performans, popülasyonun %{perc:.1f}'inden daha efektif bir hıza işaret eder.",
-        "ref_table_title": "Klasik Norm Referans Tablosu",
-        "ref_note": "Not: Bu değerler gerçek veri setinizdeki Ortalama ve Standart Sapma (SD) değerlerine göre oluşturulmuştur.",
-        "levels": ["Yaş Grubu", "Çok İyi", "İyi", "Normal", "Zayıf", "Çok Zayıf"]
+        "ref_title": "📊 Klasik Norm Referans Tablosu (Tüm Testler)",
+        "ref_note": "⚠️ Not: Bu değerler saniye cinsindendir. Düzeyler, örneklem ortalaması ve standart sapma (SD) değerleri baz alınarak hesaplanmıştır.",
+        "table_cols": ["Yaş Grubu", "Test", "Çok İyi", "İyi", "Normal", "Zayıf", "Çok Zayıf"]
     },
     "EN": {
         "title": "RAN Analytics System",
@@ -115,9 +115,9 @@ texts = {
         "metric_p": "Percentile",
         "metric_r": "Raw Time (sec)",
         "comment": "Analysis: For a {age}-month-old sample, a performance of {score}s in the {test} test indicates a velocity more effective than {perc:.1f}% of the population.",
-        "ref_table_title": "Classical Norm Reference Table",
-        "ref_note": "Note: These values are generated based on the Mean and Standard Deviation (SD) of your actual dataset.",
-        "levels": ["Age Group", "Very Good", "Good", "Normal", "Weak", "Very Weak"]
+        "ref_title": "📊 Classical Norm Reference Table (All Tests)",
+        "ref_note": "⚠️ Note: These values are in seconds. Levels are calculated based on sample mean and standard deviation (SD).",
+        "table_cols": ["Age Group", "Test", "Very Good", "Good", "Normal", "Weak", "Very Weak"]
     }
 }
 
@@ -198,97 +198,29 @@ if norms:
 
         st.info(f"**{durum}**\n\n{t['comment'].format(age=yas_ay, test=secilen_etiket, score=ham_sure, perc=yuzdelik)}")
 
-        # --- 8. KLASİK NORM REFERANS TABLOLARI (YENİ EKLENEN KISIM) ---
+        # --- 8. KLASİK NORM REFERANS TABLOSU (EN ALTA EKLENEN BÖLÜM) ---
         st.divider()
-        st.subheader(f"📊 {t['ref_table_title']}")
-
-        referans_verileri = {
-            "Şekil": {
-                t["levels"][0]: ["66-71 Ay", "72-77 Ay", "78-83 Ay"],
-                t["levels"][1]: ["< 48.9", "< 48.6", "< 48.4"],
-                t["levels"][2]: ["48.9 - 62.2", "48.6 - 62.0", "48.4 - 60.7"],
-                t["levels"][3]: ["62.2 - 75.5", "62.0 - 75.4", "60.7 - 73.0"],
-                t["levels"][4]: ["75.5 - 88.7", "75.4 - 88.9", "73.0 - 85.2"],
-                t["levels"][5]: ["> 88.7", "> 88.9", "> 85.2"]
-            },
-            "Renk": {
-                t["levels"][0]: ["66-71 Ay", "72-77 Ay", "78-83 Ay"],
-                t["levels"][1]: ["< 46.8", "< 48.0", "< 44.6"],
-                t["levels"][2]: ["46.8 - 72.7", "48.0 - 69.0", "44.6 - 67.4"],
-                t["levels"][3]: ["72.7 - 98.6", "69.0 - 90.1", "67.4 - 90.1"],
-                t["levels"][4]: ["98.6 - 124.6", "90.1 - 111.1", "90.1 - 112.9"],
-                t["levels"][5]: ["> 124.6", "> 111.1", "> 112.9"]
-            },
-            "Sayı": {
-                t["levels"][0]: ["66-71 Ay", "72-77 Ay", "78-83 Ay"],
-                t["levels"][1]: ["< 37.0", "< 40.4", "< 36.1"],
-                t["levels"][2]: ["37.0 - 57.1", "40.4 - 57.6", "36.1 - 53.7"],
-                t["levels"][3]: ["57.1 - 77.2", "57.6 - 74.8", "53.7 - 71.3"],
-                t["levels"][4]: ["77.2 - 97.3", "74.8 - 92.0", "71.3 - 88.9"],
-                t["levels"][5]: ["> 97.3", "> 92.0", "> 88.9"]
-            }
-        }
-
-        # Seçilen teste göre ilgili tabloyu DataFrame olarak oluştur ve bas
-        current_ref_df = pd.DataFrame(referans_verileri[test_tipi])
-        st.table(current_ref_df)
-        st.caption(t["ref_note"])
-
-    else:
-        st.warning(t["error_age"])
-# --- 8. KLASİK NORM REFERANS TABLOSU (TÜM TESTLER) ---
-        st.divider()
-        st.subheader(f"📊 {t['ref_table_title']}")
-        st.write("Aşağıdaki tabloda tüm RAN alt testleri için yaş gruplarına göre belirlenmiş başarı düzeyleri (saniye) yer almaktadır.")
-
-        # Tüm verileri içeren tek bir ana tablo yapısı
-        all_refs = {
-            t["levels"][0]: [
-                "66-71 Ay", "72-77 Ay", "78-83 Ay", 
-                "66-71 Ay", "72-77 Ay", "78-83 Ay", 
-                "66-71 Ay", "72-77 Ay", "78-83 Ay"
-            ],
-            "Test": [
-                "Şekil", "Şekil", "Şekil", 
-                "Renk", "Renk", "Renk", 
-                "Sayı", "Sayı", "Sayı"
-            ],
-            t["levels"][1]: [
-                "< 48.9", "< 48.6", "< 48.4", # Şekil
-                "< 46.8", "< 48.0", "< 44.6", # Renk
-                "< 37.0", "< 40.4", "< 36.1"  # Sayı
-            ],
-            t["levels"][2]: [
-                "48.9 - 62.2", "48.6 - 62.0", "48.4 - 60.7", # Şekil
-                "46.8 - 72.7", "48.0 - 69.0", "44.6 - 67.4", # Renk
-                "37.0 - 57.1", "40.4 - 57.6", "36.1 - 53.7"  # Sayı
-            ],
-            t["levels"][3]: [
-                "62.2 - 75.5", "62.0 - 75.4", "60.7 - 73.0", # Şekil
-                "72.7 - 98.6", "69.0 - 90.1", "67.4 - 90.1", # Renk
-                "57.1 - 77.2", "57.6 - 74.8", "53.7 - 71.3"  # Sayı
-            ],
-            t["levels"][4]: [
-                "75.5 - 88.7", "75.4 - 88.9", "73.0 - 85.2", # Şekil
-                "98.6 - 124.6", "90.1 - 111.1", "90.1 - 112.9", # Renk
-                "77.2 - 97.3", "74.8 - 92.0", "71.3 - 88.9"  # Sayı
-            ],
-            t["levels"][5]: [
-                "> 88.7", "> 88.9", "> 85.2", # Şekil
-                "> 124.6", "> 111.1", "> 112.9", # Renk
-                "> 97.3", "> 92.0", "> 88.9"  # Sayı
-            ]
-        }
-
-        # Tabloyu oluştur ve görselleştir
-        df_all_ref = pd.DataFrame(all_refs)
+        st.subheader(t["ref_title"])
         
-        # Sadece seçili dili kullananlar için sütun isimlerini İngilizce/Türkçe ayarlıyoruz
-        if lang == "EN":
-             df_all_ref["Test"] = df_all_ref["Test"].replace({"Şekil": "Shape", "Renk": "Color", "Sayı": "Digit"})
+        # Test isimlerini dile göre ayarla
+        shape_lbl = "Şekil" if lang == "TR" else "Shape"
+        color_lbl = "Renk" if lang == "TR" else "Color"
+        digit_lbl = "Sayı" if lang == "TR" else "Digit"
 
-        st.dataframe(df_all_ref, use_container_width=True, hide_index=True)
+        referans_data = {
+            t["table_cols"][0]: ["66-71 Ay", "72-77 Ay", "78-83 Ay"] * 3,
+            t["table_cols"][1]: [shape_lbl]*3 + [color_lbl]*3 + [digit_lbl]*3,
+            t["table_cols"][2]: ["< 48.9", "< 48.6", "< 48.4", "< 46.8", "< 48.0", "< 44.6", "< 37.0", "< 40.4", "< 36.1"],
+            t["table_cols"][3]: ["48.9-62.2", "48.6-62.0", "48.4-60.7", "46.8-72.7", "48.0-69.0", "44.6-67.4", "37.0-57.1", "40.4-57.6", "36.1-53.7"],
+            t["table_cols"][4]: ["62.2-75.5", "62.0-75.4", "60.7-73.0", "72.7-98.6", "69.0-90.1", "67.4-90.1", "57.1-77.2", "57.6-74.8", "53.7-71.3"],
+            t["table_cols"][5]: ["75.5-88.7", "75.4-88.9", "73.0-85.2", "98.6-124.6", "90.1-111.1", "90.1-112.9", "77.2-97.3", "74.8-92.0", "71.3-88.9"],
+            t["table_cols"][6]: ["> 88.7", "> 88.9", "> 85.2", "> 124.6", "> 111.1", "> 112.9", "> 97.3", "> 92.0", "> 88.9"]
+        }
+        
+        df_ref = pd.DataFrame(referans_data)
+        st.dataframe(df_ref, use_container_width=True, hide_index=True)
         st.caption(t["ref_note"])
+        # --- REFERANS TABLOSU BÖLÜM SONU ---
 
     else:
         st.warning(t["error_age"])
