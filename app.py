@@ -15,7 +15,7 @@ def check_password():
         return True
 
     # Giriş Ekranı
-    st.markdown("<h2 style='text-align: center; color: #1e3a8a;'>🔐 Klinik Karar Destek Aracı</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center; color: #1e3a8a;'>🔐 RAN Karar Destek Aracı</h2>", unsafe_allow_html=True)
     
     col_a, col_b, col_c = st.columns([1, 2, 1])
     with col_b:
