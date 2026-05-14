@@ -4,52 +4,21 @@ import pandas as pd
 # 1. SAYFA YAPILANDIRMASI VE PROFESYONEL UI (CSS)
 st.set_page_config(page_title="RAN Analytics", layout="wide")
 
-# Stabil ve hatasız CSS (Sadece kurumsal renkler ve kart yapıları için)
+# Stabil ve hatasız CSS
 st.markdown("""
     <style>
-    .stApp {
-        background-color: #f8f9fa;
-    }
+    .stApp { background-color: #f8f9fa; }
     .header-container {
         display: flex;
         align-items: center;
         gap: 20px;
         margin-bottom: 20px;
     }
-    .header-logo {
-        height: 60px;
-        border-radius: 8px;
-    }
-    h1 {
-        color: #1e3a8a !important;
-        font-family: 'Inter', sans-serif;
-        font-weight: 700;
-        letter-spacing: -0.02em;
-        margin: 0;
-    }
-    h3 {
-        color: #334155 !important;
-        font-weight: 600;
-    }
-    [data-testid="stSidebar"] {
-        background-color: #ffffff;
-        border-right: 1px solid #e2e8f0;
-    }
-    [data-testid="stMetricValue"] {
-        color: #2563eb !important;
-        font-size: 1.8rem !important;
-    }
-    .stAlert {
-        border-radius: 12px;
-        border: none;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    }
-    hr {
-        border-top: 1px solid #cbd5e1 !important;
-    }
-    .stNumberInput div, .stSelectbox div {
-        border-radius: 8px !important;
-    }
+    .header-logo { height: 60px; border-radius: 8px; }
+    h1 { color: #1e3a8a !important; font-family: 'Inter', sans-serif; font-weight: 700; margin: 0; }
+    [data-testid="stMetricValue"] { color: #2563eb !important; font-size: 1.8rem !important; }
+    .stAlert { border-radius: 12px; border: none; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+    hr { border-top: 1px solid #cbd5e1 !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -81,9 +50,7 @@ norms = load_data()
 
 if norms:
     # 3. YAN PANEL (PARAMETRELER)
-    # Hata veren 'icon' parametresi yerine emoji kullanıldı
     st.sidebar.subheader("⚙️ Parametreler")
-    
     test_tipi = st.sidebar.selectbox("Test Modülü", ["Şekil", "Renk", "Sayı"])
     yas_ay = st.sidebar.slider("Öğrenci Yaşı (Ay)", 70, 82, 75)
     ham_sure = st.sidebar.number_input("Tamamlama Süresi (Saniye)", 20, 150, 60)
@@ -96,19 +63,14 @@ if norms:
         df_yas['raw_numeric'] = pd.to_numeric(df_yas['raw'], errors='coerce')
         idx = (df_yas['raw_numeric'] - ham_sure).abs().idxmin()
         sonuc_satiri = df_yas.loc[idx]
-        
         t_puani = sonuc_satiri['norm']
         yuzdelik = sonuc_satiri['percentile']
 
         # Kategori Belirleme
-        if t_puani <= 30:
-            durum = "🔴 Kritik: Çok Yavaş"
-        elif t_puani <= 40:
-            durum = "🟡 Risk: Yavaş"
-        elif t_puani >= 60:
-            durum = "🟢 Üstün: Çok Hızlı"
-        else:
-            durum = "🔵 Standart: Beklenen Gelişim"
+        if t_puani <= 30: durum = "🔴 Kritik: Çok Yavaş"
+        elif t_puani <= 40: durum = "🟡 Risk: Yavaş"
+        elif t_puani >= 60: durum = "🟢 Üstün: Çok Hızlı"
+        else: durum = "🔵 Standart: Beklenen Gelişim"
 
         # 5. GÖRSEL SONUÇ PANELİ
         st.divider()
@@ -121,7 +83,7 @@ if norms:
 
         st.info(f"**{durum}**\n\nAnaliz: {yas_ay} aylık örneklemde {test_tipi} testi için {ham_sure} saniyelik performans, popülasyonun %{yuzdelik:.1f}'inden daha efektif bir hıza işaret eder.")
 
-        # --- 6. KLASİK NORM REFERANS TABLOSU ---
+        # 6. KLASİK NORM REFERANS TABLOSU
         st.divider()
         st.subheader("📚 Klasik Norm Referans Tablosu (Tüm Testler)")
         
@@ -138,8 +100,21 @@ if norms:
         df_ref = pd.DataFrame(referans_data)
         st.dataframe(df_ref, use_container_width=True, hide_index=True)
         st.caption("⚠️ Not: Bu değerler saniye cinsindendir. Düzeyler, örneklem ortalaması ve standart sapma (SD) değerleri baz alınarak hesaplanmıştır.")
-        
-        # --- 7. AKADEMİK ATIF NOTU ---
+
+        # --- 7. KURUMSAL LOGOLAR (BURAYA EKLENDİ) ---
+        st.write("") # Küçük bir boşluk
+        l_col1, l_col2, l_col3, l_col4 = st.columns(4)
+
+        with l_col1:
+            st.image("https://upload.wikimedia.org/wikipedia/tr/b/b8/Hacettepe_Universitesi_Logo.png", width=80)
+        with l_col2:
+            st.image("https://upload.wikimedia.org/wikipedia/tr/0/08/Duzce_Universitesi_logo.png", width=80)
+        with l_col3:
+            st.image("https://web.uri.edu/wp-content/themes/uri-main/images/uri-logo.png", width=110)
+        with l_col4:
+            st.image("https://www.r-project.org/logo/Rlogo.png", width=80)
+
+        # --- 8. AKADEMİK ATIF NOTU ---
         st.write("") 
         st.markdown("<div style='text-align: center; color: gray; font-size: 0.85rem;'>Bu normlama sistemi, Lenhard, Lenhard & Maurice (2018) tarafından R Statistics için geliştirilen cNORM paketi ile yapılmıştır.</div>", unsafe_allow_html=True)
 
