@@ -1,24 +1,55 @@
 import streamlit as st
 import pandas as pd
 
-# 1. SAYFA YAPILANDIRMASI
+# 1. SAYFA YAPILANDIRMASI VE PROFESYONEL UI (CSS)
 st.set_page_config(page_title="RAN Analytics", layout="wide")
 
-# CSS - Sadece stabilite ve kurumsal renkler için (İkonları bozmaz)
+# Stabil ve hatasız CSS (Sadece kurumsal renkler ve kart yapıları için)
 st.markdown("""
     <style>
-    .stApp { background-color: #f8f9fa; }
+    .stApp {
+        background-color: #f8f9fa;
+    }
     .header-container {
         display: flex;
         align-items: center;
         gap: 20px;
         margin-bottom: 20px;
     }
-    .header-logo { height: 60px; border-radius: 8px; }
-    h1 { color: #1e3a8a !important; font-family: 'Inter', sans-serif; font-weight: 700; margin: 0; }
-    [data-testid="stMetricValue"] { color: #2563eb !important; font-size: 1.8rem !important; }
-    .stAlert { border-radius: 12px; border: none; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
-    hr { border-top: 1px solid #cbd5e1 !important; }
+    .header-logo {
+        height: 60px;
+        border-radius: 8px;
+    }
+    h1 {
+        color: #1e3a8a !important;
+        font-family: 'Inter', sans-serif;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        margin: 0;
+    }
+    h3 {
+        color: #334155 !important;
+        font-weight: 600;
+    }
+    [data-testid="stSidebar"] {
+        background-color: #ffffff;
+        border-right: 1px solid #e2e8f0;
+    }
+    [data-testid="stMetricValue"] {
+        color: #2563eb !important;
+        font-size: 1.8rem !important;
+    }
+    .stAlert {
+        border-radius: 12px;
+        border: none;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    hr {
+        border-top: 1px solid #cbd5e1 !important;
+    }
+    .stNumberInput div, .stSelectbox div {
+        border-radius: 8px !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -27,7 +58,7 @@ logo_url = "https://support.renaissance.com/servlet/rtaImage?eid=ka0Nx00000073KX
 
 st.markdown(f"""
     <div class="header-container">
-        <img src="{logo_url}" class="header-logo" alt="RAN Logo">
+        <img src="{logo_url}" class="header-logo" alt="RAN Test İkonu">
         <h1>RAN Analytics System</h1>
     </div>
     """, unsafe_allow_html=True)
@@ -43,21 +74,21 @@ def load_data():
         sayi = pd.read_csv("RAN_Sayi_Tum_Aylar_Norm_Tablosu.csv")
         return {"Şekil": sekil, "Renk": renk, "Sayı": sayi}
     except Exception as e:
-        st.error("Sistem Hatası: Veri tabanı yüklenemedi!")
+        st.error(f"Sistem Hatası: Veri tabanı yüklenemedi!")
         return None
 
 norms = load_data()
 
 if norms:
-    # 3. YAN PANEL (Parametreler)
-    # Streamlit native material icon kullanımı: :material/icon_name:
-    st.sidebar.subheader("Parametreler", icon=":material/tune:")
+    # 3. YAN PANEL (PARAMETRELER)
+    # Hata veren 'icon' parametresi yerine emoji kullanıldı
+    st.sidebar.subheader("⚙️ Parametreler")
     
     test_tipi = st.sidebar.selectbox("Test Modülü", ["Şekil", "Renk", "Sayı"])
     yas_ay = st.sidebar.slider("Öğrenci Yaşı (Ay)", 70, 82, 75)
     ham_sure = st.sidebar.number_input("Tamamlama Süresi (Saniye)", 20, 150, 60)
 
-    # 4. HESAPLAMA MANTIĞI (Dokunulmadı)
+    # 4. HESAPLAMA MANTIĞI
     df_secili = norms[test_tipi]
     df_yas = df_secili[df_secili['Aylik_Yas'] == yas_ay].copy()
 
@@ -65,29 +96,34 @@ if norms:
         df_yas['raw_numeric'] = pd.to_numeric(df_yas['raw'], errors='coerce')
         idx = (df_yas['raw_numeric'] - ham_sure).abs().idxmin()
         sonuc_satiri = df_yas.loc[idx]
+        
         t_puani = sonuc_satiri['norm']
         yuzdelik = sonuc_satiri['percentile']
 
+        # Kategori Belirleme
+        if t_puani <= 30:
+            durum = "🔴 Kritik: Çok Yavaş"
+        elif t_puani <= 40:
+            durum = "🟡 Risk: Yavaş"
+        elif t_puani >= 60:
+            durum = "🟢 Üstün: Çok Hızlı"
+        else:
+            durum = "🔵 Standart: Beklenen Gelişim"
+
         # 5. GÖRSEL SONUÇ PANELİ
         st.divider()
-        st.subheader("Analitik Sonuçlar", icon=":material/analytics:")
+        st.subheader("📈 Analitik Sonuçlar")
         
         col1, col2, col3 = st.columns(3)
         col1.metric("T-Skoru", f"{t_puani:.2f}")
         col2.metric("Persentil (Yüzdelik)", f"%{yuzdelik:.1f}")
         col3.metric("Ham Veri (sn)", f"{ham_sure}")
 
-        # Durum Belirleme
-        if t_puani <= 30: durum = "🔴 Kritik: Çok Yavaş"
-        elif t_puani <= 40: durum = "🟡 Risk: Yavaş"
-        elif t_puani >= 60: durum = "🟢 Üstün: Çok Hızlı"
-        else: durum = "🔵 Standart: Beklenen Gelişim"
-
         st.info(f"**{durum}**\n\nAnaliz: {yas_ay} aylık örneklemde {test_tipi} testi için {ham_sure} saniyelik performans, popülasyonun %{yuzdelik:.1f}'inden daha efektif bir hıza işaret eder.")
 
         # --- 6. KLASİK NORM REFERANS TABLOSU ---
         st.divider()
-        st.subheader("Klasik Norm Referans Tablosu", icon=":material/menu_book:")
+        st.subheader("📚 Klasik Norm Referans Tablosu (Tüm Testler)")
         
         referans_data = {
             "Yaş Grubu": ["66-71 Ay", "72-77 Ay", "78-83 Ay"] * 3,
