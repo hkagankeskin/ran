@@ -1,10 +1,11 @@
 import streamlit as st
 import pandas as pd
+import os
 
-# 1. SAYFA YAPILANDIRMASI VE PROFESYONEL UI (CSS)
+# 1. SAYFA YAPILANDIRMASI
 st.set_page_config(page_title="RAN Analytics", layout="wide")
 
-# Kurumsal ve temiz tasarım için CSS
+# Stabil ve kurumsal CSS
 st.markdown("""
     <style>
     .stApp { background-color: #f8f9fa; }
@@ -19,6 +20,13 @@ st.markdown("""
     [data-testid="stMetricValue"] { color: #2563eb !important; font-size: 1.8rem !important; }
     .stAlert { border-radius: 12px; border: none; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
     hr { border-top: 1px solid #cbd5e1 !important; }
+    
+    /* Logo hizalama stili */
+    .logo-box {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -49,7 +57,7 @@ def load_data():
 norms = load_data()
 
 if norms:
-    # 3. YAN PANEL (PARAMETRELER)
+    # 3. YAN PANEL
     st.sidebar.subheader("⚙️ Parametreler")
     test_tipi = st.sidebar.selectbox("Test Modülü", ["Şekil", "Renk", "Sayı"])
     yas_ay = st.sidebar.slider("Öğrenci Yaşı (Ay)", 70, 82, 75)
@@ -66,7 +74,6 @@ if norms:
         t_puani = sonuc_satiri['norm']
         yuzdelik = sonuc_satiri['percentile']
 
-        # Durum Belirleme
         if t_puani <= 30: durum = "🔴 Kritik: Çok Yavaş"
         elif t_puani <= 40: durum = "🟡 Risk: Yavaş"
         elif t_puani >= 60: durum = "🟢 Üstün: Çok Hızlı"
@@ -81,7 +88,7 @@ if norms:
         col3.metric("Ham Veri (sn)", f"{ham_sure}")
         st.info(f"**{durum}**\n\nAnaliz: {yas_ay} aylık örneklemde {test_tipi} testi için {ham_sure} saniyelik performans, popülasyonun %{yuzdelik:.1f}'inden daha efektif bir hıza işaret eder.")
 
-        # 6. KLASİK REFERANS TABLOSU
+        # 6. KLASİK TABLO
         st.divider()
         st.subheader("📚 Klasik Norm Referans Tablosu")
         referans_data = {
@@ -95,18 +102,23 @@ if norms:
         }
         st.dataframe(pd.DataFrame(referans_data), use_container_width=True, hide_index=True)
 
-        # --- 7. KURUMSAL LOGOLAR (BELİRTİLEN SIRALAMA: Hacettepe, Düzce, R Logo, URI 1, URI 2) ---
+        # --- 7. KURUMSAL LOGOLAR (DENGELENMİŞ ÜÇLÜ YAPI) ---
         st.write("") 
         st.divider()
-        l_col1, l_col2, l_col3, l_col4, l_col5 = st.columns(5)
-
-        with l_col1:
-            st.image("hacettepe.svg", width=80)
-        with l_col2:
-            st.image("duzce.svg", width=80)
-        with l_col3:
-            st.image("Rlogo.svg", width=80)
         
+        # 3 Logoyu tam ortalamak için 5 sütun kullanıp kenarları boş bırakıyoruz [1, 1, 1, 1, 1]
+        _, l_col1, l_col2, l_col3, _ = st.columns([1, 2, 2, 2, 1])
+
+        # Dosya isimleri (Büyük/Küçük harf duyarlılığına dikkat edilmiştir)
+        with l_col1:
+            if os.path.exists("hacettepe.svg"):
+                st.image("hacettepe.svg", width=90)
+        with l_col2:
+            if os.path.exists("duzce.svg"):
+                st.image("duzce.svg", width=90)
+        with l_col3:
+            if os.path.exists("Rlogo.svg"):
+                st.image("Rlogo.svg", width=90)
 
         # --- 8. AKADEMİK ATIF NOTU ---
         st.write("") 
