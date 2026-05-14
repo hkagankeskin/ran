@@ -4,27 +4,22 @@ import pandas as pd
 # 1. SAYFA YAPILANDIRMASI VE PROFESYONEL UI (CSS)
 st.set_page_config(page_title="RAN Analytics", layout="wide")
 
-# Modern, kurumsal ve ferah bir tasarım için CSS
+# Modern, kurumsal ve ferah tasarım için CSS
 st.markdown("""
     <style>
-    /* Ana Arka Plan */
     .stApp {
         background-color: #f8f9fa;
     }
-    
-    /* Başlık Alanı (Logo ve Yazı Yan Yana) */
     .header-container {
         display: flex;
         align-items: center;
         gap: 20px;
         margin-bottom: 20px;
     }
-
     .header-logo {
         height: 60px;
         border-radius: 8px;
     }
-
     h1 {
         color: #1e3a8a !important;
         font-family: 'Inter', sans-serif;
@@ -32,114 +27,45 @@ st.markdown("""
         letter-spacing: -0.02em;
         margin: 0;
     }
-    
     h3 {
         color: #334155 !important;
         font-weight: 600;
     }
-
-    /* Sidebar Tasarımı */
     [data-testid="stSidebar"] {
         background-color: #ffffff;
         border-right: 1px solid #e2e8f0;
     }
-    
-    /* Metrik Kartları Özelleştirme */
     [data-testid="stMetricValue"] {
         color: #2563eb !important;
         font-size: 1.8rem !important;
     }
-    
-    /* Bilgi Kutuları (st.info) */
     .stAlert {
         border-radius: 12px;
         border: none;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
-    
-    /* Divider Çizgisi */
     hr {
         border-top: 1px solid #cbd5e1 !important;
     }
-    
-    /* Giriş Elemanları */
     .stNumberInput div, .stSelectbox div {
         border-radius: 8px !important;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# 2. DİL SEÇENEKLERİ SÖZLÜĞÜ (Yeni not eklendi)
-texts = {
-    "TR": {
-        "title": "RAN Analytics System",
-        "subtitle": "Hızlı Otomatik İsimlendirme (RAN) Klinik Karar Destek Aracı",
-        "sidebar_lang": "Uygulama Dili / App Language",
-        "sidebar_header": "Parametreler",
-        "test_type": "Test Modülü",
-        "age": "Öğrenci Yaşı (Ay)",
-        "score": "Tamamlama Süresi (Saniye)",
-        "test_options": ["Şekil", "Renk", "Sayı"],
-        "error_file": "Sistem Hatası: Veri tabanı yüklenemedi!",
-        "error_age": "Seçilen yaş segmenti için norm verisi bulunamadı.",
-        "eval_header": "Analitik Sonuçlar",
-        "cat_heavy": "🔴 Kritik: Çok Yavaş",
-        "cat_risk": "🟡 Risk: Yavaş",
-        "cat_superior": "🟢 Üstün: Çok Hızlı",
-        "cat_normal": "🔵 Standart: Beklenen Gelişim",
-        "metric_t": "T-Skoru",
-        "metric_p": "Persentil (Yüzdelik)",
-        "metric_r": "Ham Veri (sn)",
-        "comment": "Analiz: {age} aylık örneklemde {test} testi için {score} saniyelik performans, popülasyonun %{perc:.1f}'inden daha efektif bir hıza işaret eder.",
-        "ref_title": "📊 Klasik Norm Referans Tablosu (Tüm Testler)",
-        "ref_note": "⚠️ Not: Bu değerler saniye cinsindendir. Düzeyler, örneklem ortalaması ve standart sapma (SD) değerleri baz alınarak hesaplanmıştır.",
-        "table_cols": ["Yaş Grubu", "Test", "Çok İyi", "İyi", "Normal", "Zayıf", "Çok Zayıf"],
-        "cite_note": "Bu normlama sistemi, Lenhard, Lenhard & Maurice (2018) tarafından R Statistics için geliştirilen cNORM paketi ile yapılmıştır."
-    },
-    "EN": {
-        "title": "RAN Analytics System",
-        "subtitle": "Rapid Automatized Naming (RAN) Clinical Decision Support Tool",
-        "sidebar_lang": "App Language / Uygulama Dili",
-        "sidebar_header": "Parameters",
-        "test_type": "Test Module",
-        "age": "Student Age (Months)",
-        "score": "Test Duration (Seconds)",
-        "test_options": ["Shape", "Color", "Number"],
-        "error_file": "System Error: Database could not be loaded!",
-        "error_age": "No norm data found for the selected age segment.",
-        "eval_header": "Analytical Results",
-        "cat_heavy": "🔴 Critical: Very Slow",
-        "cat_risk": "🟡 At Risk: Slow",
-        "cat_superior": "🟢 Superior: Very Fast",
-        "cat_normal": "🔵 Standard: Expected Development",
-        "metric_t": "T-Score",
-        "metric_p": "Percentile",
-        "metric_r": "Raw Time (sec)",
-        "comment": "Analysis: For a {age}-month-old sample, a performance of {score}s in the {test} test indicates a velocity more effective than {perc:.1f}% of the population.",
-        "ref_title": "📊 Classical Norm Reference Table (All Tests)",
-        "ref_note": "⚠️ Note: These values are in seconds. Levels are calculated based on sample mean and standard deviation (SD).",
-        "table_cols": ["Age Group", "Test", "Very Good", "Good", "Normal", "Weak", "Very Weak"],
-        "cite_note": "This norming system was developed using the cNORM package created by Lenhard, Lenhard & Maurice (2018) for R Statistics."
-    }
-}
-
-# 3. DİL SEÇİMİ
-lang = st.sidebar.radio(texts["TR"]["sidebar_lang"], ["TR", "EN"])
-t = texts[lang]
-
 # --- BAŞLIK ALANI ---
 logo_url = "https://support.renaissance.com/servlet/rtaImage?eid=ka0Nx00000073KX&feoid=00NQg000006K5pm&refid=0EMQg00000IutXM" 
 
 st.markdown(f"""
     <div class="header-container">
-        <img src="{logo_url}" class="header-logo" alt="RAN Test Icon">
-        <h1>{t["title"]}</h1>
+        <img src="{logo_url}" class="header-logo" alt="RAN Test İkonu">
+        <h1>RAN Analytics System</h1>
     </div>
     """, unsafe_allow_html=True)
 
-st.write(t["subtitle"])
+st.write("Hızlı Otomatik İsimlendirme (RAN) Klinik Karar Destek Aracı")
 
-# 4. VERİ YÜKLEME
+# 2. VERİ YÜKLEME
 @st.cache_data
 def load_data():
     try:
@@ -148,24 +74,20 @@ def load_data():
         sayi = pd.read_csv("RAN_Sayi_Tum_Aylar_Norm_Tablosu.csv")
         return {"Şekil": sekil, "Renk": renk, "Sayı": sayi}
     except Exception as e:
-        st.error(f"{t['error_file']} Log: {e}")
+        st.error(f"Sistem Hatası: Veri tabanı yüklenemedi! Detay: {e}")
         return None
 
 norms = load_data()
 
 if norms:
-    # 5. YAN PANEL
-    st.sidebar.divider()
-    st.sidebar.subheader(t["sidebar_header"])
+    # 3. YAN PANEL (PARAMETRELER)
+    st.sidebar.header("Parametreler")
     
-    test_mapping = {t["test_options"][0]: "Şekil", t["test_options"][1]: "Renk", t["test_options"][2]: "Sayı"}
-    secilen_etiket = st.sidebar.selectbox(t["test_type"], t["test_options"])
-    test_tipi = test_mapping[secilen_etiket]
-    
-    yas_ay = st.sidebar.slider(t["age"], 70, 82, 75)
-    ham_sure = st.sidebar.number_input(t["score"], 20, 150, 60)
+    test_tipi = st.sidebar.selectbox("Test Modülü", ["Şekil", "Renk", "Sayı"])
+    yas_ay = st.sidebar.slider("Öğrenci Yaşı (Ay)", 70, 82, 75)
+    ham_sure = st.sidebar.number_input("Tamamlama Süresi (Saniye)", 20, 150, 60)
 
-    # 6. HESAPLAMA MANTIĞI
+    # 4. HESAPLAMA MANTIĞI
     df_secili = norms[test_tipi]
     df_yas = df_secili[df_secili['Aylik_Yas'] == yas_ay].copy()
 
@@ -177,54 +99,48 @@ if norms:
         t_puani = sonuc_satiri['norm']
         yuzdelik = sonuc_satiri['percentile']
 
+        # Kategori Belirleme
         if t_puani <= 30:
-            durum = t["cat_heavy"]; renk_kod = "red"
+            durum = "🔴 Kritik: Çok Yavaş"; renk_kod = "red"
         elif t_puani <= 40:
-            durum = t["cat_risk"]; renk_kod = "orange"
+            durum = "🟡 Risk: Yavaş"; renk_kod = "orange"
         elif t_puani >= 60:
-            durum = t["cat_superior"]; renk_kod = "green"
+            durum = "🟢 Üstün: Çok Hızlı"; renk_kod = "green"
         else:
-            durum = t["cat_normal"]; renk_kod = "blue"
+            durum = "🔵 Standart: Beklenen Gelişim"; renk_kod = "blue"
 
-        # 7. GÖRSEL SONUÇ PANELİ
+        # 5. GÖRSEL SONUÇ PANELİ
         st.divider()
-        st.subheader(t['eval_header'])
+        st.subheader("Analitik Sonuçlar")
         
-        m_col1, m_col2, m_col3 = st.columns(3)
-        with m_col1:
-            st.metric(t["metric_t"], f"{t_puani:.2f}")
-        with m_col2:
-            st.metric(t["metric_p"], f"%{yuzdelik:.1f}")
-        with m_col3:
-            st.metric(t["metric_r"], f"{ham_sure}")
+        col1, col2, col3 = st.columns(3)
+        col1.metric("T-Skoru", f"{t_puani:.2f}")
+        col2.metric("Persentil (Yüzdelik)", f"%{yuzdelik:.1f}")
+        col3.metric("Ham Veri (sn)", f"{ham_sure}")
 
-        st.info(f"**{durum}**\n\n{t['comment'].format(age=yas_ay, test=secilen_etiket, score=ham_sure, perc=yuzdelik)}")
+        st.info(f"**{durum}**\n\nAnaliz: {yas_ay} aylık örneklemde {test_tipi} testi için {ham_sure} saniyelik performans, popülasyonun %{yuzdelik:.1f}'inden daha efektif bir hıza işaret eder.")
 
-        # --- 8. KLASİK NORM REFERANS TABLOSU ---
+        # --- 6. KLASİK NORM REFERANS TABLOSU ---
         st.divider()
-        st.subheader(t["ref_title"])
+        st.subheader("📊 Klasik Norm Referans Tablosu (Tüm Testler)")
         
-        shape_lbl = "Şekil" if lang == "TR" else "Shape"
-        color_lbl = "Renk" if lang == "TR" else "Color"
-        digit_lbl = "Sayı" if lang == "TR" else "Digit"
-
         referans_data = {
-            t["table_cols"][0]: ["66-71 Ay", "72-77 Ay", "78-83 Ay"] * 3,
-            t["table_cols"][1]: [shape_lbl]*3 + [color_lbl]*3 + [digit_lbl]*3,
-            t["table_cols"][2]: ["< 48.9", "< 48.6", "< 48.4", "< 46.8", "< 48.0", "< 44.6", "< 37.0", "< 40.4", "< 36.1"],
-            t["table_cols"][3]: ["48.9-62.2", "48.6-62.0", "48.4-60.7", "46.8-72.7", "48.0-69.0", "44.6-67.4", "37.0-57.1", "40.4-57.6", "36.1-53.7"],
-            t["table_cols"][4]: ["62.2-75.5", "62.0-75.4", "60.7-73.0", "72.7-98.6", "69.0-90.1", "67.4-90.1", "57.1-77.2", "57.6-74.8", "53.7-71.3"],
-            t["table_cols"][5]: ["75.5-88.7", "75.4-88.9", "73.0-85.2", "98.6-124.6", "90.1-111.1", "90.1-112.9", "77.2-97.3", "74.8-92.0", "71.3-88.9"],
-            t["table_cols"][6]: ["> 88.7", "> 88.9", "> 85.2", "> 124.6", "> 111.1", "> 112.9", "> 97.3", "> 92.0", "> 88.9"]
+            "Yaş Grubu": ["66-71 Ay", "72-77 Ay", "78-83 Ay"] * 3,
+            "Test": ["Şekil"]*3 + ["Renk"]*3 + ["Sayı"]*3,
+            "Çok İyi": ["< 48.9", "< 48.6", "< 48.4", "< 46.8", "< 48.0", "< 44.6", "< 37.0", "< 40.4", "< 36.1"],
+            "İyi": ["48.9-62.2", "48.6-62.0", "48.4-60.7", "46.8-72.7", "48.0-69.0", "44.6-67.4", "37.0-57.1", "40.4-57.6", "36.1-53.7"],
+            "Normal": ["62.2-75.5", "62.0-75.4", "60.7-73.0", "72.7-98.6", "69.0-90.1", "67.4-90.1", "57.1-77.2", "57.6-74.8", "53.7-71.3"],
+            "Zayıf": ["75.5-88.7", "75.4-88.9", "73.0-85.2", "98.6-124.6", "90.1-111.1", "90.1-112.9", "77.2-97.3", "74.8-92.0", "71.3-88.9"],
+            "Çok Zayıf": ["> 88.7", "> 88.9", "> 85.2", "> 124.6", "> 111.1", "> 112.9", "> 97.3", "> 92.0", "> 88.9"]
         }
         
         df_ref = pd.DataFrame(referans_data)
         st.dataframe(df_ref, use_container_width=True, hide_index=True)
-        st.caption(t["ref_note"])
+        st.caption("⚠️ Not: Bu değerler saniye cinsindendir. Düzeyler, örneklem ortalaması ve standart sapma (SD) değerleri baz alınarak hesaplanmıştır.")
         
-        # --- 9. AKADEMİK ATIF NOTU (YENİ EKLENEN KISIM) ---
+        # --- 7. AKADEMİK ATIF NOTU ---
         st.write("") 
-        st.markdown(f"<div style='text-align: center; color: gray; font-size: 0.85rem;'>{t['cite_note']}</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align: center; color: gray; font-size: 0.85rem;'>Bu normlama sistemi, Lenhard, Lenhard & Maurice (2018) tarafından R Statistics için geliştirilen cNORM paketi ile yapılmıştır.</div>", unsafe_allow_html=True)
 
     else:
-        st.warning(t["error_age"])
+        st.warning("Seçilen yaş segmenti için norm verisi bulunamadı.")
