@@ -4,7 +4,7 @@ import pandas as pd
 # 1. SAYFA YAPILANDIRMASI VE PROFESYONEL UI (CSS)
 st.set_page_config(page_title="RAN Analytics", layout="wide")
 
-# Stabil ve hatasız CSS
+# Kurumsal ve temiz tasarım için CSS
 st.markdown("""
     <style>
     .stApp { background-color: #f8f9fa; }
@@ -27,7 +27,7 @@ logo_url = "https://support.renaissance.com/servlet/rtaImage?eid=ka0Nx00000073KX
 
 st.markdown(f"""
     <div class="header-container">
-        <img src="{logo_url}" class="header-logo" alt="RAN Test İkonu">
+        <img src="{logo_url}" class="header-logo" alt="RAN Logo">
         <h1>RAN Analytics System</h1>
     </div>
     """, unsafe_allow_html=True)
@@ -43,7 +43,7 @@ def load_data():
         sayi = pd.read_csv("RAN_Sayi_Tum_Aylar_Norm_Tablosu.csv")
         return {"Şekil": sekil, "Renk": renk, "Sayı": sayi}
     except Exception as e:
-        st.error(f"Sistem Hatası: Veri tabanı yüklenemedi!")
+        st.error("Sistem Hatası: Veri tabanı yüklenemedi!")
         return None
 
 norms = load_data()
@@ -66,27 +66,24 @@ if norms:
         t_puani = sonuc_satiri['norm']
         yuzdelik = sonuc_satiri['percentile']
 
-        # Kategori Belirleme
+        # Durum Belirleme
         if t_puani <= 30: durum = "🔴 Kritik: Çok Yavaş"
         elif t_puani <= 40: durum = "🟡 Risk: Yavaş"
         elif t_puani >= 60: durum = "🟢 Üstün: Çok Hızlı"
         else: durum = "🔵 Standart: Beklenen Gelişim"
 
-        # 5. GÖRSEL SONUÇ PANELİ
+        # 5. SONUÇLAR
         st.divider()
         st.subheader("📈 Analitik Sonuçlar")
-        
         col1, col2, col3 = st.columns(3)
         col1.metric("T-Skoru", f"{t_puani:.2f}")
         col2.metric("Persentil (Yüzdelik)", f"%{yuzdelik:.1f}")
         col3.metric("Ham Veri (sn)", f"{ham_sure}")
-
         st.info(f"**{durum}**\n\nAnaliz: {yas_ay} aylık örneklemde {test_tipi} testi için {ham_sure} saniyelik performans, popülasyonun %{yuzdelik:.1f}'inden daha efektif bir hıza işaret eder.")
 
-        # 6. KLASİK NORM REFERANS TABLOSU
+        # 6. KLASİK REFERANS TABLOSU
         st.divider()
-        st.subheader("📚 Klasik Norm Referans Tablosu (Tüm Testler)")
-        
+        st.subheader("📚 Klasik Norm Referans Tablosu")
         referans_data = {
             "Yaş Grubu": ["66-71 Ay", "72-77 Ay", "78-83 Ay"] * 3,
             "Test": ["Şekil"]*3 + ["Renk"]*3 + ["Sayı"]*3,
@@ -96,27 +93,26 @@ if norms:
             "Zayıf": ["75.5-88.7", "75.4-88.9", "73.0-85.2", "98.6-124.6", "90.1-111.1", "90.1-112.9", "77.2-97.3", "74.8-92.0", "71.3-88.9"],
             "Çok Zayıf": ["> 88.7", "> 88.9", "> 85.2", "> 124.6", "> 111.1", "> 112.9", "> 97.3", "> 92.0", "> 88.9"]
         }
-        
-        df_ref = pd.DataFrame(referans_data)
-        st.dataframe(df_ref, use_container_width=True, hide_index=True)
-        st.caption("⚠️ Not: Bu değerler saniye cinsindendir. Düzeyler, örneklem ortalaması ve standart sapma (SD) değerleri baz alınarak hesaplanmıştır.")
+        st.dataframe(pd.DataFrame(referans_data), use_container_width=True, hide_index=True)
 
-        # --- 7. KURUMSAL LOGOLAR (BURAYA EKLENDİ) ---
-        st.write("") # Küçük bir boşluk
-        l_col1, l_col2, l_col3, l_col4 = st.columns(4)
+        # --- 7. KURUMSAL LOGOLAR (BELİRTİLEN SIRALAMA: Hacettepe, Düzce, R Logo, URI 1, URI 2) ---
+        st.write("") 
+        st.divider()
+        l_col1, l_col2, l_col3, l_col4, l_col5 = st.columns(5)
 
         with l_col1:
-            st.image("https://upload.wikimedia.org/wikipedia/tr/b/b8/Hacettepe_Universitesi_Logo.png", width=80)
+            st.image("hacettepe.svg", width=80)
         with l_col2:
-            st.image("https://upload.wikimedia.org/wikipedia/tr/0/08/Duzce_Universitesi_logo.png", width=80)
+            st.image("duzce.svg", width=80)
         with l_col3:
-            st.image("https://web.uri.edu/wp-content/themes/uri-main/images/uri-logo.png", width=110)
+            st.image("Rlogo.svg", width=80)
         with l_col4:
-            st.image("https://www.r-project.org/logo/Rlogo.png", width=80)
+            st.image("uri1.jpg", width=110)
+        with l_col5:
+            st.image("uri2.jpg", width=110)
 
         # --- 8. AKADEMİK ATIF NOTU ---
         st.write("") 
         st.markdown("<div style='text-align: center; color: gray; font-size: 0.85rem;'>Bu normlama sistemi, Lenhard, Lenhard & Maurice (2018) tarafından R Statistics için geliştirilen cNORM paketi ile yapılmıştır.</div>", unsafe_allow_html=True)
-
     else:
         st.warning("Seçilen yaş segmenti için norm verisi bulunamadı.")
