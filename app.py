@@ -2,126 +2,140 @@ import streamlit as st
 import pandas as pd
 import os
 
-# 1. SAYFA YAPILANDIRMASI
+# --- 1. SAYFA YAPILANDIRMASI (HER ZAMAN EN ÜSTTE) ---
 st.set_page_config(page_title="RAN Analytics", layout="wide")
 
-# Stabil ve kurumsal CSS
-st.markdown("""
-    <style>
-    .stApp { background-color: #f8f9fa; }
-    .header-container {
-        display: flex;
-        align-items: center;
-        gap: 20px;
-        margin-bottom: 20px;
-    }
-    .header-logo { height: 60px; border-radius: 8px; }
-    h1 { color: #1e3a8a !important; font-family: 'Inter', sans-serif; font-weight: 700; margin: 0; }
-    [data-testid="stMetricValue"] { color: #2563eb !important; font-size: 1.8rem !important; }
-    .stAlert { border-radius: 12px; border: none; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
-    hr { border-top: 1px solid #cbd5e1 !important; }
+# --- 2. SECRETS TEMELLİ ŞİFRE KONTROLÜ ---
+def check_password():
+    """Secrets üzerinden şifre kontrolü yapar."""
+    if "password_correct" not in st.session_state:
+        st.session_state["password_correct"] = False
+
+    if st.session_state["password_correct"]:
+        return True
+
+    # Giriş Ekranı
+    st.markdown("<h2 style='text-align: center; color: #1e3a8a;'>🔐 Klinik Karar Destek Aracı</h2>", unsafe_allow_html=True)
     
-    /* Logo hizalama stili */
-    .logo-box {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
-    </style>
-    """, unsafe_allow_html=True)
+    col_a, col_b, col_c = st.columns([1, 2, 1])
+    with col_b:
+        entered_password = st.text_input("Lütfen erişim şifresini giriniz", type="password")
+        if st.button("Giriş Yap"):
+            # Secrets içindeki 'password' anahtarı ile karşılaştırır
+            if entered_password == st.secrets["password"]:
+                st.session_state["password_correct"] = True
+                st.rerun()
+            else:
+                st.error("❌ Hatalı şifre. Lütfen yetkili ile iletişime geçiniz.")
+    return False
 
-# --- BAŞLIK ALANI ---
-logo_url = "https://support.renaissance.com/servlet/rtaImage?eid=ka0Nx00000073KX&feoid=00NQg000006K5pm&refid=0EMQg00000IutXM" 
+# --- 3. UYGULAMA ANA DÖNGÜSÜ ---
+if check_password():
+    # Şifre doğruysa uygulama içeriği yüklenir
 
-st.markdown(f"""
-    <div class="header-container">
-        <img src="{logo_url}" class="header-logo" alt="RAN Logo">
-        <h1>RAN Analytics System</h1>
-    </div>
-    """, unsafe_allow_html=True)
-
-st.write("Hızlı Otomatik İsimlendirme (RAN) Klinik Karar Destek Aracı")
-
-# 2. VERİ YÜKLEME
-@st.cache_data
-def load_data():
-    try:
-        sekil = pd.read_csv("RAN_Sekil_Tum_Aylar_Norm_Tablosu.csv")
-        renk = pd.read_csv("RAN_Renk_Tum_Aylar_Norm_Tablosu.csv")
-        sayi = pd.read_csv("RAN_Sayi_Tum_Aylar_Norm_Tablosu.csv")
-        return {"Şekil": sekil, "Renk": renk, "Sayı": sayi}
-    except Exception as e:
-        st.error("Sistem Hatası: Veri tabanı yüklenemedi!")
-        return None
-
-norms = load_data()
-
-if norms:
-    # 3. YAN PANEL
-    st.sidebar.subheader("⚙️ Parametreler")
-    test_tipi = st.sidebar.selectbox("Test Modülü", ["Şekil", "Renk", "Sayı"])
-    yas_ay = st.sidebar.slider("Öğrenci Yaşı (Ay)", 70, 82, 75)
-    ham_sure = st.sidebar.number_input("Tamamlama Süresi (Saniye)", 20, 150, 60)
-
-    # 4. HESAPLAMA MANTIĞI
-    df_secili = norms[test_tipi]
-    df_yas = df_secili[df_secili['Aylik_Yas'] == yas_ay].copy()
-
-    if not df_yas.empty:
-        df_yas['raw_numeric'] = pd.to_numeric(df_yas['raw'], errors='coerce')
-        idx = (df_yas['raw_numeric'] - ham_sure).abs().idxmin()
-        sonuc_satiri = df_yas.loc[idx]
-        t_puani = sonuc_satiri['norm']
-        yuzdelik = sonuc_satiri['percentile']
-
-        if t_puani <= 30: durum = "🔴 Kritik: Çok Yavaş"
-        elif t_puani <= 40: durum = "🟡 Risk: Yavaş"
-        elif t_puani >= 60: durum = "🟢 Üstün: Çok Hızlı"
-        else: durum = "🔵 Standart: Beklenen Gelişim"
-
-        # 5. SONUÇLAR
-        st.divider()
-        st.subheader("📈 Analitik Sonuçlar")
-        col1, col2, col3 = st.columns(3)
-        col1.metric("T-Skoru", f"{t_puani:.2f}")
-        col2.metric("Persentil (Yüzdelik)", f"%{yuzdelik:.1f}")
-        col3.metric("Ham Veri (sn)", f"{ham_sure}")
-        st.info(f"**{durum}**\n\nAnaliz: {yas_ay} aylık örneklemde {test_tipi} testi için {ham_sure} saniyelik performans, popülasyonun %{yuzdelik:.1f}'inden daha efektif bir hıza işaret eder.")
-
-        # 6. KLASİK TABLO
-        st.divider()
-        st.subheader("📚 Klasik Norm Referans Tablosu")
-        referans_data = {
-            "Yaş Grubu": ["66-71 Ay", "72-77 Ay", "78-83 Ay"] * 3,
-            "Test": ["Şekil"]*3 + ["Renk"]*3 + ["Sayı"]*3,
-            "Çok İyi": ["< 48.9", "< 48.6", "< 48.4", "< 46.8", "< 48.0", "< 44.6", "< 37.0", "< 40.4", "< 36.1"],
-            "İyi": ["48.9-62.2", "48.6-62.0", "48.4-60.7", "46.8-72.7", "48.0-69.0", "44.6-67.4", "37.0-57.1", "40.4-57.6", "36.1-53.7"],
-            "Normal": ["62.2-75.5", "62.0-75.4", "60.7-73.0", "72.7-98.6", "69.0-90.1", "67.4-90.1", "57.1-77.2", "57.6-74.8", "53.7-71.3"],
-            "Zayıf": ["75.5-88.7", "75.4-88.9", "73.0-85.2", "98.6-124.6", "90.1-111.1", "90.1-112.9", "77.2-97.3", "74.8-92.0", "71.3-88.9"],
-            "Çok Zayıf": ["> 88.7", "> 88.9", "> 85.2", "> 124.6", "> 111.1", "> 112.9", "> 97.3", "> 92.0", "> 88.9"]
+    # Kurumsal CSS
+    st.markdown("""
+        <style>
+        .stApp { background-color: #f8f9fa; }
+        .header-container {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 20px;
         }
-        st.dataframe(pd.DataFrame(referans_data), use_container_width=True, hide_index=True)
+        .header-logo { height: 60px; border-radius: 8px; }
+        h1 { color: #1e3a8a !important; font-family: 'Inter', sans-serif; font-weight: 700; margin: 0; }
+        [data-testid="stMetricValue"] { color: #2563eb !important; font-size: 1.8rem !important; }
+        .stAlert { border-radius: 12px; border: none; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        hr { border-top: 1px solid #cbd5e1 !important; }
+        </style>
+        """, unsafe_allow_html=True)
 
-        # --- 7. KURUMSAL LOGOLAR (DENGELENMİŞ ÜÇLÜ YAPI) ---
-        st.write("") 
-        st.divider()
-        
-        # 3 Logoyu tam ortalamak için 5 sütun kullanıp kenarları boş bırakıyoruz [1, 1, 1, 1, 1]
-        _, l_col1, l_col2, l_col3, _ = st.columns([1, 2, 2, 2, 1])
+    # --- BAŞLIK ALANI ---
+    logo_url = "https://support.renaissance.com/servlet/rtaImage?eid=ka0Nx00000073KX&feoid=00NQg000006K5pm&refid=0EMQg00000IutXM" 
+    st.markdown(f"""
+        <div class="header-container">
+            <img src="{logo_url}" class="header-logo" alt="RAN Logo">
+            <h1>RAN Analytics System</h1>
+        </div>
+        """, unsafe_allow_html=True)
 
-        # Dosya isimleri (Büyük/Küçük harf duyarlılığına dikkat edilmiştir)
-        with l_col1:
-            if os.path.exists("hacettepe.svg"):
-                st.image("hacettepe.svg", width=85)
-        with l_col2:
-            if os.path.exists("duzce.svg"):
-                st.image("duzce.svg", width=130)
-        with l_col3:
-            if os.path.exists("Rlogo.svg"):
-                st.image("Rlogo.svg", width=115)
+    st.write("Hızlı Otomatik İsimlendirme (RAN) Klinik Karar Destek Aracı")
 
-        # --- 8. AKADEMİK ATIF NOTU ---
-        st.write("") 
-        st.markdown("<div style='text-align: center; color: gray; font-size: 0.85rem;'>Bu normlama sistemi, Lenhard, Lenhard & Maurice (2018) tarafından R Statistics için geliştirilen cNORM paketi ile yapılmıştır.</div>", unsafe_allow_html=True)
-    else:
-        st.warning("Seçilen yaş segmenti için norm verisi bulunamadı.")
+    # 4. VERİ YÜKLEME
+    @st.cache_data
+    def load_data():
+        try:
+            sekil = pd.read_csv("RAN_Sekil_Tum_Aylar_Norm_Tablosu.csv")
+            renk = pd.read_csv("RAN_Renk_Tum_Aylar_Norm_Tablosu.csv")
+            sayi = pd.read_csv("RAN_Sayi_Tum_Aylar_Norm_Tablosu.csv")
+            return {"Şekil": sekil, "Renk": renk, "Sayı": sayi}
+        except Exception:
+            st.error("Sistem Hatası: Veri tabanı yüklenemedi!")
+            return None
+
+    norms = load_data()
+
+    if norms:
+        # 5. YAN PANEL
+        st.sidebar.subheader("⚙️ Parametreler")
+        test_tipi = st.sidebar.selectbox("Test Modülü", ["Şekil", "Renk", "Sayı"])
+        yas_ay = st.sidebar.slider("Öğrenci Yaşı (Ay)", 70, 82, 75)
+        ham_sure = st.sidebar.number_input("Tamamlama Süresi (Saniye)", 20, 150, 60)
+
+        # 6. HESAPLAMA MANTIĞI
+        df_secili = norms[test_tipi]
+        df_yas = df_secili[df_secili['Aylik_Yas'] == yas_ay].copy()
+
+        if not df_yas.empty:
+            df_yas['raw_numeric'] = pd.to_numeric(df_yas['raw'], errors='coerce')
+            idx = (df_yas['raw_numeric'] - ham_sure).abs().idxmin()
+            sonuc_satiri = df_yas.loc[idx]
+            t_puani = sonuc_satiri['norm']
+            yuzdelik = sonuc_satiri['percentile']
+
+            if t_puani <= 30: durum = "🔴 Kritik: Çok Yavaş"
+            elif t_puani <= 40: durum = "🟡 Risk: Yavaş"
+            elif t_puani >= 60: durum = "🟢 Üstün: Çok Hızlı"
+            else: durum = "🔵 Standart: Beklenen Gelişim"
+
+            # 7. SONUÇLAR
+            st.divider()
+            st.subheader("📈 Analitik Sonuçlar")
+            col1, col2, col3 = st.columns(3)
+            col1.metric("T-Skoru", f"{t_puani:.2f}")
+            col2.metric("Persentil (Yüzdelik)", f"%{yuzdelik:.1f}")
+            col3.metric("Ham Veri (sn)", f"{ham_sure}")
+            st.info(f"**{durum}**\n\nAnaliz: {yas_ay} aylık örneklemde {test_tipi} testi için {ham_sure} saniyelik performans, popülasyonun %{yuzdelik:.1f}'inden daha efektif bir hıza işaret eder.")
+
+            # 8. KLASİK TABLO
+            st.divider()
+            st.subheader("📚 Klasik Norm Referans Tablosu")
+            referans_data = {
+                "Yaş Grubu": ["66-71 Ay", "72-77 Ay", "78-83 Ay"] * 3,
+                "Test": ["Şekil"]*3 + ["Renk"]*3 + ["Sayı"]*3,
+                "Çok İyi": ["< 48.9", "< 48.6", "< 48.4", "< 46.8", "< 48.0", "< 44.6", "< 37.0", "< 40.4", "< 36.1"],
+                "İyi": ["48.9-62.2", "48.6-62.0", "48.4-60.7", "46.8-72.7", "48.0-69.0", "44.6-67.4", "37.0-57.1", "40.4-57.6", "36.1-53.7"],
+                "Normal": ["62.2-75.5", "62.0-75.4", "60.7-73.0", "72.7-98.6", "69.0-90.1", "67.4-90.1", "57.1-77.2", "57.6-74.8", "53.7-71.3"],
+                "Zayıf": ["75.5-88.7", "75.4-88.9", "73.0-85.2", "98.6-124.6", "90.1-111.1", "90.1-112.9", "77.2-97.3", "74.8-92.0", "71.3-88.9"],
+                "Çok Zayıf": ["> 88.7", "> 88.9", "> 85.2", "> 124.6", "> 111.1", "> 112.9", "> 97.3", "> 92.0", "> 88.9"]
+            }
+            st.dataframe(pd.DataFrame(referans_data), use_container_width=True, hide_index=True)
+
+            # --- 9. KURUMSAL LOGOLAR (DENGELENMİŞ ÜÇLÜ YAPI) ---
+            st.write("") 
+            st.divider()
+            _, l_col1, l_col2, l_col3, _ = st.columns([1, 2, 2, 2, 1])
+
+            with l_col1:
+                if os.path.exists("hacettepe.svg"): st.image("hacettepe.svg", width=90)
+            with l_col2:
+                if os.path.exists("duzce.svg"): st.image("duzce.svg", width=90)
+            with l_col3:
+                if os.path.exists("Rlogo.svg"): st.image("Rlogo.svg", width=90)
+
+            # --- 10. AKADEMİK ATIF NOTU ---
+            st.write("") 
+            st.markdown("<div style='text-align: center; color: gray; font-size: 0.85rem;'>Bu normlama sistemi, Lenhard, Lenhard & Maurice (2018) tarafından R Statistics için geliştirilen cNORM paketi ile yapılmıştır.</div>", unsafe_allow_html=True)
+        else:
+            st.warning("Seçilen yaş segmenti için norm verisi bulunamadı.")
