@@ -1,10 +1,10 @@
 import streamlit as st
 import pandas as pd
 
-# 1. SAYFA YAPILANDIRMASI VE PROFESYONEL UI (CSS) (GÜNCELLENDİ)
+# 1. SAYFA YAPILANDIRMASI VE PROFESYONEL UI (CSS)
 st.set_page_config(page_title="RAN Analytics", layout="wide")
 
-# Modern, kurumsal ve ferah bir tasarım için CSS (Logo için güncellendi)
+# Modern, kurumsal ve ferah bir tasarım için CSS
 st.markdown("""
     <style>
     /* Ana Arka Plan */
@@ -16,21 +16,21 @@ st.markdown("""
     .header-container {
         display: flex;
         align-items: center;
-        gap: 20px; /* Logo ve yazı arasındaki boşluk */
+        gap: 20px;
         margin-bottom: 20px;
     }
 
     .header-logo {
-        height: 60px; /* Logo yüksekliği */
-        border-radius: 8px; /* İsteğe bağlı yuvarlatılmış köşe */
+        height: 60px;
+        border-radius: 8px;
     }
 
     h1 {
-        color: #1e3a8a !important; /* Kurumsal Lacivert */
+        color: #1e3a8a !important;
         font-family: 'Inter', sans-serif;
         font-weight: 700;
         letter-spacing: -0.02em;
-        margin: 0; /* Boşluğu kaldır */
+        margin: 0;
     }
     
     h3 {
@@ -46,7 +46,7 @@ st.markdown("""
     
     /* Metrik Kartları Özelleştirme */
     [data-testid="stMetricValue"] {
-        color: #2563eb !important; /* Profesyonel Mavi */
+        color: #2563eb !important;
         font-size: 1.8rem !important;
     }
     
@@ -69,7 +69,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 2. DİL SEÇENEKLERİ SÖZLÜĞÜ (Referans tablosu metinleri eklendi)
+# 2. DİL SEÇENEKLERİ SÖZLÜĞÜ (Yeni not eklendi)
 texts = {
     "TR": {
         "title": "RAN Analytics System",
@@ -93,7 +93,8 @@ texts = {
         "comment": "Analiz: {age} aylık örneklemde {test} testi için {score} saniyelik performans, popülasyonun %{perc:.1f}'inden daha efektif bir hıza işaret eder.",
         "ref_title": "📊 Klasik Norm Referans Tablosu (Tüm Testler)",
         "ref_note": "⚠️ Not: Bu değerler saniye cinsindendir. Düzeyler, örneklem ortalaması ve standart sapma (SD) değerleri baz alınarak hesaplanmıştır.",
-        "table_cols": ["Yaş Grubu", "Test", "Çok İyi", "İyi", "Normal", "Zayıf", "Çok Zayıf"]
+        "table_cols": ["Yaş Grubu", "Test", "Çok İyi", "İyi", "Normal", "Zayıf", "Çok Zayıf"],
+        "cite_note": "Bu normlama sistemi, Lenhard, Lenhard & Maurice (2018) tarafından R Statistics için geliştirilen cNORM paketi ile yapılmıştır."
     },
     "EN": {
         "title": "RAN Analytics System",
@@ -117,7 +118,8 @@ texts = {
         "comment": "Analysis: For a {age}-month-old sample, a performance of {score}s in the {test} test indicates a velocity more effective than {perc:.1f}% of the population.",
         "ref_title": "📊 Classical Norm Reference Table (All Tests)",
         "ref_note": "⚠️ Note: These values are in seconds. Levels are calculated based on sample mean and standard deviation (SD).",
-        "table_cols": ["Age Group", "Test", "Very Good", "Good", "Normal", "Weak", "Very Weak"]
+        "table_cols": ["Age Group", "Test", "Very Good", "Good", "Normal", "Weak", "Very Weak"],
+        "cite_note": "This norming system was developed using the cNORM package created by Lenhard, Lenhard & Maurice (2018) for R Statistics."
     }
 }
 
@@ -198,11 +200,10 @@ if norms:
 
         st.info(f"**{durum}**\n\n{t['comment'].format(age=yas_ay, test=secilen_etiket, score=ham_sure, perc=yuzdelik)}")
 
-        # --- 8. KLASİK NORM REFERANS TABLOSU (EN ALTA EKLENEN BÖLÜM) ---
+        # --- 8. KLASİK NORM REFERANS TABLOSU ---
         st.divider()
         st.subheader(t["ref_title"])
         
-        # Test isimlerini dile göre ayarla
         shape_lbl = "Şekil" if lang == "TR" else "Shape"
         color_lbl = "Renk" if lang == "TR" else "Color"
         digit_lbl = "Sayı" if lang == "TR" else "Digit"
@@ -220,7 +221,10 @@ if norms:
         df_ref = pd.DataFrame(referans_data)
         st.dataframe(df_ref, use_container_width=True, hide_index=True)
         st.caption(t["ref_note"])
-        # --- REFERANS TABLOSU BÖLÜM SONU ---
+        
+        # --- 9. AKADEMİK ATIF NOTU (YENİ EKLENEN KISIM) ---
+        st.write("") 
+        st.markdown(f"<div style='text-align: center; color: gray; font-size: 0.85rem;'>{t['cite_note']}</div>", unsafe_allow_html=True)
 
     else:
         st.warning(t["error_age"])
