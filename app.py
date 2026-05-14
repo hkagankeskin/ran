@@ -4,51 +4,71 @@ import pandas as pd
 # 1. SAYFA YAPILANDIRMASI VE PROFESYONEL UI (CSS)
 st.set_page_config(page_title="RAN Analytics", layout="wide")
 
-# Modern, kurumsal ve ferah tasarım için CSS
+# Google Material Symbols Kütüphanesini ve Özel CSS'i ekliyoruz
 st.markdown("""
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
     <style>
     .stApp {
         background-color: #f8f9fa;
     }
+    
+    /* İkon ve Başlık Stili */
+    .section-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 20px;
+        margin-bottom: 15px;
+    }
+    
+    .material-symbols-rounded {
+        color: #1e3a8a;
+        font-size: 28px !important;
+    }
+
     .header-container {
         display: flex;
         align-items: center;
         gap: 20px;
         margin-bottom: 20px;
     }
+    
     .header-logo {
         height: 60px;
         border-radius: 8px;
     }
+
     h1 {
         color: #1e3a8a !important;
         font-family: 'Inter', sans-serif;
         font-weight: 700;
-        letter-spacing: -0.02em;
         margin: 0;
     }
-    h3 {
-        color: #334155 !important;
+    
+    /* Sidebar başlığı için stil */
+    .sidebar-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
         font-weight: 600;
+        color: #334155;
+        margin-bottom: 10px;
     }
+
     [data-testid="stSidebar"] {
         background-color: #ffffff;
         border-right: 1px solid #e2e8f0;
     }
+    
     [data-testid="stMetricValue"] {
         color: #2563eb !important;
         font-size: 1.8rem !important;
     }
+    
     .stAlert {
         border-radius: 12px;
         border: none;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    }
-    hr {
-        border-top: 1px solid #cbd5e1 !important;
-    }
-    .stNumberInput div, .stSelectbox div {
-        border-radius: 8px !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -74,14 +94,19 @@ def load_data():
         sayi = pd.read_csv("RAN_Sayi_Tum_Aylar_Norm_Tablosu.csv")
         return {"Şekil": sekil, "Renk": renk, "Sayı": sayi}
     except Exception as e:
-        st.error(f"Sistem Hatası: Veri tabanı yüklenemedi! Detay: {e}")
+        st.error(f"Sistem Hatası: Veri tabanı yüklenemedi!")
         return None
 
 norms = load_data()
 
 if norms:
-    # 3. YAN PANEL (PARAMETRELER)
-    st.sidebar.header("Parametreler")
+    # 3. YAN PANEL (Modern İkonlu Başlık)
+    st.sidebar.markdown("""
+        <div class="sidebar-title">
+            <span class="material-symbols-rounded">tune</span>
+            Parametreler
+        </div>
+        """, unsafe_allow_html=True)
     
     test_tipi = st.sidebar.selectbox("Test Modülü", ["Şekil", "Renk", "Sayı"])
     yas_ay = st.sidebar.slider("Öğrenci Yaşı (Ay)", 70, 82, 75)
@@ -95,34 +120,39 @@ if norms:
         df_yas['raw_numeric'] = pd.to_numeric(df_yas['raw'], errors='coerce')
         idx = (df_yas['raw_numeric'] - ham_sure).abs().idxmin()
         sonuc_satiri = df_yas.loc[idx]
-        
         t_puani = sonuc_satiri['norm']
         yuzdelik = sonuc_satiri['percentile']
 
-        # Kategori Belirleme
-        if t_puani <= 30:
-            durum = "🔴 Kritik: Çok Yavaş"; renk_kod = "red"
-        elif t_puani <= 40:
-            durum = "🟡 Risk: Yavaş"; renk_kod = "orange"
-        elif t_puani >= 60:
-            durum = "🟢 Üstün: Çok Hızlı"; renk_kod = "green"
-        else:
-            durum = "🔵 Standart: Beklenen Gelişim"; renk_kod = "blue"
-
-        # 5. GÖRSEL SONUÇ PANELİ
+        # 5. GÖRSEL SONUÇ PANELİ (Modern İkonlu Başlık)
         st.divider()
-        st.subheader("Analitik Sonuçlar")
+        st.markdown("""
+            <div class="section-header">
+                <span class="material-symbols-rounded">query_stats</span>
+                <h3 style="margin:0;">Analitik Sonuçlar</h3>
+            </div>
+            """, unsafe_allow_html=True)
         
         col1, col2, col3 = st.columns(3)
         col1.metric("T-Skoru", f"{t_puani:.2f}")
         col2.metric("Persentil (Yüzdelik)", f"%{yuzdelik:.1f}")
         col3.metric("Ham Veri (sn)", f"{ham_sure}")
 
+        # Dinamik Durum Kartı
+        if t_puani <= 30: durum = "🔴 Kritik: Çok Yavaş"
+        elif t_puani <= 40: durum = "🟡 Risk: Yavaş"
+        elif t_puani >= 60: durum = "🟢 Üstün: Çok Hızlı"
+        else: durum = "🔵 Standart: Beklenen Gelişim"
+
         st.info(f"**{durum}**\n\nAnaliz: {yas_ay} aylık örneklemde {test_tipi} testi için {ham_sure} saniyelik performans, popülasyonun %{yuzdelik:.1f}'inden daha efektif bir hıza işaret eder.")
 
-        # --- 6. KLASİK NORM REFERANS TABLOSU ---
+        # --- 6. KLASİK NORM REFERANS TABLOSU (Modern İkonlu Başlık) ---
         st.divider()
-        st.subheader("📊 Klasik Norm Referans Tablosu (Tüm Testler)")
+        st.markdown("""
+            <div class="section-header">
+                <span class="material-symbols-rounded">menu_book</span>
+                <h3 style="margin:0;">Klasik Norm Referans Tablosu</h3>
+            </div>
+            """, unsafe_allow_html=True)
         
         referans_data = {
             "Yaş Grubu": ["66-71 Ay", "72-77 Ay", "78-83 Ay"] * 3,
