@@ -30,8 +30,7 @@ def check_password():
     return False
 
 # --- 3. UYGULAMA ANA DÖNGÜSÜ ---
-if True 
-    # check_password():
+if check_password():
     # Şifre doğruysa uygulama içeriği yüklenir
 
     # Kurumsal CSS
