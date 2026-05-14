@@ -115,10 +115,10 @@ if norms:
                 st.image("hacettepe.svg", width=90)
         with l_col2:
             if os.path.exists("duzce.svg"):
-                st.image("duzce.svg", width=90)
+                st.image("duzce.svg", width=110)
         with l_col3:
             if os.path.exists("Rlogo.svg"):
-                st.image("Rlogo.svg", width=90)
+                st.image("Rlogo.svg", width=110)
 
         # --- 8. AKADEMİK ATIF NOTU ---
         st.write("") 
