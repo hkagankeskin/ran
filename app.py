@@ -128,11 +128,11 @@ if check_password():
             _, l_col1, l_col2, l_col3, _ = st.columns([1, 2, 2, 2, 1])
 
             with l_col1:
-                if os.path.exists("hacettepe.svg"): st.image("hacettepe.svg", width=90)
+                if os.path.exists("hacettepe.svg"): st.image("hacettepe.svg", width=85)
             with l_col2:
-                if os.path.exists("duzce.svg"): st.image("duzce.svg", width=90)
+                if os.path.exists("duzce.svg"): st.image("duzce.svg", width=140)
             with l_col3:
-                if os.path.exists("Rlogo.svg"): st.image("Rlogo.svg", width=90)
+                if os.path.exists("Rlogo.svg"): st.image("Rlogo.svg", width=120)
 
             # --- 10. AKADEMİK ATIF NOTU ---
             st.write("") 
