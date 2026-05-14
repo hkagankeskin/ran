@@ -236,3 +236,59 @@ if norms:
 
     else:
         st.warning(t["error_age"])
+# --- 8. KLASİK NORM REFERANS TABLOSU (TÜM TESTLER) ---
+        st.divider()
+        st.subheader(f"📊 {t['ref_table_title']}")
+        st.write("Aşağıdaki tabloda tüm RAN alt testleri için yaş gruplarına göre belirlenmiş başarı düzeyleri (saniye) yer almaktadır.")
+
+        # Tüm verileri içeren tek bir ana tablo yapısı
+        all_refs = {
+            t["levels"][0]: [
+                "66-71 Ay", "72-77 Ay", "78-83 Ay", 
+                "66-71 Ay", "72-77 Ay", "78-83 Ay", 
+                "66-71 Ay", "72-77 Ay", "78-83 Ay"
+            ],
+            "Test": [
+                "Şekil", "Şekil", "Şekil", 
+                "Renk", "Renk", "Renk", 
+                "Sayı", "Sayı", "Sayı"
+            ],
+            t["levels"][1]: [
+                "< 48.9", "< 48.6", "< 48.4", # Şekil
+                "< 46.8", "< 48.0", "< 44.6", # Renk
+                "< 37.0", "< 40.4", "< 36.1"  # Sayı
+            ],
+            t["levels"][2]: [
+                "48.9 - 62.2", "48.6 - 62.0", "48.4 - 60.7", # Şekil
+                "46.8 - 72.7", "48.0 - 69.0", "44.6 - 67.4", # Renk
+                "37.0 - 57.1", "40.4 - 57.6", "36.1 - 53.7"  # Sayı
+            ],
+            t["levels"][3]: [
+                "62.2 - 75.5", "62.0 - 75.4", "60.7 - 73.0", # Şekil
+                "72.7 - 98.6", "69.0 - 90.1", "67.4 - 90.1", # Renk
+                "57.1 - 77.2", "57.6 - 74.8", "53.7 - 71.3"  # Sayı
+            ],
+            t["levels"][4]: [
+                "75.5 - 88.7", "75.4 - 88.9", "73.0 - 85.2", # Şekil
+                "98.6 - 124.6", "90.1 - 111.1", "90.1 - 112.9", # Renk
+                "77.2 - 97.3", "74.8 - 92.0", "71.3 - 88.9"  # Sayı
+            ],
+            t["levels"][5]: [
+                "> 88.7", "> 88.9", "> 85.2", # Şekil
+                "> 124.6", "> 111.1", "> 112.9", # Renk
+                "> 97.3", "> 92.0", "> 88.9"  # Sayı
+            ]
+        }
+
+        # Tabloyu oluştur ve görselleştir
+        df_all_ref = pd.DataFrame(all_refs)
+        
+        # Sadece seçili dili kullananlar için sütun isimlerini İngilizce/Türkçe ayarlıyoruz
+        if lang == "EN":
+             df_all_ref["Test"] = df_all_ref["Test"].replace({"Şekil": "Shape", "Renk": "Color", "Sayı": "Digit"})
+
+        st.dataframe(df_all_ref, use_container_width=True, hide_index=True)
+        st.caption(t["ref_note"])
+
+    else:
+        st.warning(t["error_age"])
