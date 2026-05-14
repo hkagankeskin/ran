@@ -69,7 +69,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 2. DİL SEÇENEKLERİ SÖZLÜĞÜ (Değişmedi)
+# 2. DİL SEÇENEKLERİ SÖZLÜĞÜ (Tablo Başlıkları Eklendi)
 texts = {
     "TR": {
         "title": "RAN Analytics System",
@@ -90,7 +90,10 @@ texts = {
         "metric_t": "T-Skoru",
         "metric_p": "Persentil (Yüzdelik)",
         "metric_r": "Ham Veri (sn)",
-        "comment": "Analiz: {age} aylık örneklemde {test} testi için {score} saniyelik performans, popülasyonun %{perc:.1f}'inden daha efektif bir hıza işaret eder."
+        "comment": "Analiz: {age} aylık örneklemde {test} testi için {score} saniyelik performans, popülasyonun %{perc:.1f}'inden daha efektif bir hıza işaret eder.",
+        "ref_table_title": "Klasik Norm Referans Tablosu",
+        "ref_note": "Not: Bu değerler gerçek veri setinizdeki Ortalama ve Standart Sapma (SD) değerlerine göre oluşturulmuştur.",
+        "levels": ["Yaş Grubu", "Çok İyi", "İyi", "Normal", "Zayıf", "Çok Zayıf"]
     },
     "EN": {
         "title": "RAN Analytics System",
@@ -111,7 +114,10 @@ texts = {
         "metric_t": "T-Score",
         "metric_p": "Percentile",
         "metric_r": "Raw Time (sec)",
-        "comment": "Analysis: For a {age}-month-old sample, a performance of {score}s in the {test} test indicates a velocity more effective than {perc:.1f}% of the population."
+        "comment": "Analysis: For a {age}-month-old sample, a performance of {score}s in the {test} test indicates a velocity more effective than {perc:.1f}% of the population.",
+        "ref_table_title": "Classical Norm Reference Table",
+        "ref_note": "Note: These values are generated based on the Mean and Standard Deviation (SD) of your actual dataset.",
+        "levels": ["Age Group", "Very Good", "Good", "Normal", "Weak", "Very Weak"]
     }
 }
 
@@ -119,11 +125,9 @@ texts = {
 lang = st.sidebar.radio(texts["TR"]["sidebar_lang"], ["TR", "EN"])
 t = texts[lang]
 
-# --- BAŞLIK ALANI (GÜNCELLENDİ: Logo eklendi) ---
-# RAN testlerinin ikonik görselini buraya yerleştiriyoruz (Örn: image_1.png)
-logo_url = "https://support.renaissance.com/servlet/rtaImage?eid=ka0Nx00000073KX&feoid=00NQg000006K5pm&refid=0EMQg00000IutXM" # Renkli matris
+# --- BAŞLIK ALANI ---
+logo_url = "https://support.renaissance.com/servlet/rtaImage?eid=ka0Nx00000073KX&feoid=00NQg000006K5pm&refid=0EMQg00000IutXM" 
 
-# CSS ve HTML kullanarak logo ve yazıyı yan yana koyma
 st.markdown(f"""
     <div class="header-container">
         <img src="{logo_url}" class="header-logo" alt="RAN Test Icon">
@@ -133,7 +137,7 @@ st.markdown(f"""
 
 st.write(t["subtitle"])
 
-# 4. VERİ YÜKLEME (Değişmedi)
+# 4. VERİ YÜKLEME
 @st.cache_data
 def load_data():
     try:
@@ -148,7 +152,7 @@ def load_data():
 norms = load_data()
 
 if norms:
-    # 5. YAN PANEL (Değişmedi)
+    # 5. YAN PANEL
     st.sidebar.divider()
     st.sidebar.subheader(t["sidebar_header"])
     
@@ -159,7 +163,7 @@ if norms:
     yas_ay = st.sidebar.slider(t["age"], 70, 82, 75)
     ham_sure = st.sidebar.number_input(t["score"], 20, 150, 60)
 
-    # 6. HESAPLAMA MANTIĞI (HİÇ DEĞİŞMEDİ)
+    # 6. HESAPLAMA MANTIĞI
     df_secili = norms[test_tipi]
     df_yas = df_secili[df_secili['Aylik_Yas'] == yas_ay].copy()
 
@@ -180,11 +184,10 @@ if norms:
         else:
             durum = t["cat_normal"]; renk_kod = "blue"
 
-        # 7. GÖRSEL SONUÇ PANELİ (Değişmedi)
+        # 7. GÖRSEL SONUÇ PANELİ
         st.divider()
         st.subheader(t['eval_header'])
         
-        # Sonuç Metrikleri
         m_col1, m_col2, m_col3 = st.columns(3)
         with m_col1:
             st.metric(t["metric_t"], f"{t_puani:.2f}")
@@ -193,7 +196,43 @@ if norms:
         with m_col3:
             st.metric(t["metric_r"], f"{ham_sure}")
 
-        # Durum Kartı
         st.info(f"**{durum}**\n\n{t['comment'].format(age=yas_ay, test=secilen_etiket, score=ham_sure, perc=yuzdelik)}")
+
+        # --- 8. KLASİK NORM REFERANS TABLOLARI (YENİ EKLENEN KISIM) ---
+        st.divider()
+        st.subheader(f"📊 {t['ref_table_title']}")
+
+        referans_verileri = {
+            "Şekil": {
+                t["levels"][0]: ["66-71 Ay", "72-77 Ay", "78-83 Ay"],
+                t["levels"][1]: ["< 48.9", "< 48.6", "< 48.4"],
+                t["levels"][2]: ["48.9 - 62.2", "48.6 - 62.0", "48.4 - 60.7"],
+                t["levels"][3]: ["62.2 - 75.5", "62.0 - 75.4", "60.7 - 73.0"],
+                t["levels"][4]: ["75.5 - 88.7", "75.4 - 88.9", "73.0 - 85.2"],
+                t["levels"][5]: ["> 88.7", "> 88.9", "> 85.2"]
+            },
+            "Renk": {
+                t["levels"][0]: ["66-71 Ay", "72-77 Ay", "78-83 Ay"],
+                t["levels"][1]: ["< 46.8", "< 48.0", "< 44.6"],
+                t["levels"][2]: ["46.8 - 72.7", "48.0 - 69.0", "44.6 - 67.4"],
+                t["levels"][3]: ["72.7 - 98.6", "69.0 - 90.1", "67.4 - 90.1"],
+                t["levels"][4]: ["98.6 - 124.6", "90.1 - 111.1", "90.1 - 112.9"],
+                t["levels"][5]: ["> 124.6", "> 111.1", "> 112.9"]
+            },
+            "Sayı": {
+                t["levels"][0]: ["66-71 Ay", "72-77 Ay", "78-83 Ay"],
+                t["levels"][1]: ["< 37.0", "< 40.4", "< 36.1"],
+                t["levels"][2]: ["37.0 - 57.1", "40.4 - 57.6", "36.1 - 53.7"],
+                t["levels"][3]: ["57.1 - 77.2", "57.6 - 74.8", "53.7 - 71.3"],
+                t["levels"][4]: ["77.2 - 97.3", "74.8 - 92.0", "71.3 - 88.9"],
+                t["levels"][5]: ["> 97.3", "> 92.0", "> 88.9"]
+            }
+        }
+
+        # Seçilen teste göre ilgili tabloyu DataFrame olarak oluştur ve bas
+        current_ref_df = pd.DataFrame(referans_verileri[test_tipi])
+        st.table(current_ref_df)
+        st.caption(t["ref_note"])
+
     else:
         st.warning(t["error_age"])
