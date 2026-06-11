@@ -254,6 +254,14 @@ if check_password():
 
         st.write("")
         st.markdown(
+            "<div style='text-align: center; color: #374151; font-size: 0.90rem; margin-bottom: 6px;'>"
+            "<strong>Proje Ekibi</strong><br>"
+            "Prof. Dr. H. Kağan Keskin — Düzce Üniversitesi &nbsp;|&nbsp; "
+            "Prof. Dr. Özay Karadağ — Hacettepe Üniversitesi"
+            "</div>",
+            unsafe_allow_html=True
+        )
+        st.markdown(
             "<div style='text-align: center; color: gray; font-size: 0.85rem;'>"
             "Bu normlama sistemi, Lenhard, Lenhard & Maurice (2018) tarafından R Statistics için "
             "geliştirilen cNORM paketi ile sürekli normlama modellemesi (Taylor Polinomu $k=2$) "
