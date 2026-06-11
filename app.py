@@ -2,10 +2,8 @@ import streamlit as st
 import pandas as pd
 import os
 
-# --- 1. SAYFA YAPILANDIRMASI ---
 st.set_page_config(page_title="RAN Analytics", layout="wide")
 
-# --- 2. ŞİFRE KONTROLÜ ---
 def check_password():
     if "password_correct" not in st.session_state:
         st.session_state["password_correct"] = False
@@ -20,16 +18,104 @@ def check_password():
                 st.session_state["password_correct"] = True
                 st.rerun()
             else:
-                st.error("❌ Hatalı şifre. Lütfen yetkili ile iletişime geçiniz.")
+                st.error("❌ Hatalı şifre.")
     return False
 
-# --- 3. MODEL SINIRLARI ---
 MODEL_SINIRLARI = {
     "Şekil": {"raw_min": 30.0,  "raw_max": 104.0, "yas_min": 70, "yas_max": 96},
     "Renk":  {"raw_min": 32.0,  "raw_max": 183.0, "yas_min": 70, "yas_max": 96},
     "Sayı":  {"raw_min": 25.0,  "raw_max": 111.0, "yas_min": 70, "yas_max": 96},
     "Harf":  {"raw_min": 19.0,  "raw_max": 64.0,  "yas_min": 83, "yas_max": 96},
 }
+
+def bant_goster(t_puani):
+    """Persentil bant göstergesi — görsel çubuk"""
+    if t_puani <= 30:
+        bant = "Çok Zayıf"; renk = "#ef4444"; dolu = 1
+    elif t_puani <= 40:
+        bant = "Zayıf"; renk = "#f97316"; dolu = 2
+    elif t_puani <= 60:
+        bant = "Normal"; renk = "#3b82f6"; dolu = 3
+    elif t_puani <= 70:
+        bant = "İyi"; renk = "#22c55e"; dolu = 4
+    else:
+        bant = "Çok İyi"; renk = "#16a34a"; dolu = 5
+
+    kareler = ""
+    for i in range(1, 6):
+        if i <= dolu:
+            kareler += f"<span style='background:{renk}; color:white; padding:2px 8px; margin:1px; border-radius:3px; font-size:0.8rem;'>■</span>"
+        else:
+            kareler += f"<span style='background:#e2e8f0; color:#e2e8f0; padding:2px 8px; margin:1px; border-radius:3px; font-size:0.8rem;'>■</span>"
+
+    return f"{kareler} <span style='font-weight:600; color:{renk};'>{bant}</span>"
+
+def sonuc_hesapla(df, yas_ay, ham_sure):
+    """Verilen yaş ve süre için norm sonucunu döndür"""
+    df_yas = df[df['Aylik_Yas'] == yas_ay].copy()
+    if df_yas.empty:
+        return None
+    df_yas['raw_numeric'] = pd.to_numeric(df_yas['raw'], errors='coerce')
+    idx = (df_yas['raw_numeric'] - ham_sure).abs().idxmin()
+    satir = df_yas.loc[idx]
+    return {"t": satir['norm'], "p": satir['percentile']}
+
+def klinik_yorum_uret(sonuclar, yas_ay, aktif_testler):
+    """Öğretmen için Türkçe klinik yorum üret"""
+    sinif = "1. sınıf" if yas_ay <= 82 else "2. sınıf"
+
+    # Performans kategorileri
+    zayif = []
+    normal = []
+    iyi = []
+
+    for test in aktif_testler:
+        s = sonuclar.get(test)
+        if s is None:
+            continue
+        if s["t"] <= 40:
+            zayif.append(test)
+        elif s["t"] <= 60:
+            normal.append(test)
+        else:
+            iyi.append(test)
+
+    satirlar = []
+
+    # Genel giriş
+    satirlar.append(f"Öğrenci, {yas_ay} aylık ({sinif}) norm grubu baz alınarak değerlendirilmiştir.")
+
+    # Güçlü alanlar
+    if iyi:
+        satirlar.append(
+            f"**Güçlü alanlar:** {', '.join(iyi)} testlerinde akranlarının üzerinde "
+            f"bir otomatizasyon hızı sergilemiştir."
+        )
+
+    # Normal alanlar
+    if normal:
+        satirlar.append(
+            f"**Beklenen düzey:** {', '.join(normal)} testlerinde yaşıtlarıyla "
+            f"uyumlu bir performans göstermiştir."
+        )
+
+    # Zayıf alanlar
+    if zayif:
+        satirlar.append(
+            f"**Dikkat gerektiren alanlar:** {', '.join(zayif)} testlerinde akranlarına "
+            f"kıyasla yavaş bir otomatizasyon hızı gözlemlenmiştir. "
+            f"Bu durum okuma güçlüğü riskine işaret edebilir; "
+            f"uzman değerlendirmesi önerilir."
+        )
+
+    # Tüm testler normal veya iyi ise
+    if not zayif:
+        satirlar.append(
+            "Genel değerlendirmede öğrencinin RAN performansı yaş düzeyiyle uyumludur. "
+            "Herhangi bir müdahale planlamasına gerek görülmemektedir."
+        )
+
+    return "\n\n".join(satirlar)
 
 if check_password():
     st.markdown("""
@@ -39,7 +125,6 @@ if check_password():
         .header-logo { height: 60px; border-radius: 8px; }
         h1 { color: #1e3a8a !important; font-family: 'Inter', sans-serif; font-weight: 700; margin: 0; }
         [data-testid="stMetricValue"] { color: #2563eb !important; font-size: 1.8rem !important; }
-        .stAlert { border-radius: 12px; border: none; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         hr { border-top: 1px solid #cbd5e1 !important; }
         </style>
         """, unsafe_allow_html=True)
@@ -69,83 +154,94 @@ if check_password():
     norms = load_data()
 
     if norms:
+        # --- YAN PANEL ---
         st.sidebar.subheader("⚙️ Parametreler")
-        test_tipi = st.sidebar.selectbox("Test Modülü", ["Şekil", "Renk", "Sayı", "Harf"])
-        sinir = MODEL_SINIRLARI[test_tipi]
 
-        yas_ay = st.sidebar.slider(
-            "Öğrenci Yaşı (Ay)",
-            sinir["yas_min"], sinir["yas_max"], sinir["yas_min"]
-        )
+        yas_ay = st.sidebar.slider("Öğrenci Yaşı (Ay)", 70, 96, 78)
 
-        st.sidebar.caption(f"📏 Geçerli süre aralığı: **{sinir['raw_min']:.0f} – {sinir['raw_max']:.0f} saniye**")
-        ham_sure = st.sidebar.number_input(
-            "Tamamlama Süresi (Saniye)",
-            min_value=1.0, max_value=300.0,
-            value=float(sinir["raw_min"] + (sinir["raw_max"] - sinir["raw_min"]) / 2),
-            step=0.5
-        )
+        st.sidebar.divider()
+        st.sidebar.subheader("⏱️ Test Süreleri (Saniye)")
+        st.sidebar.caption("Uygulanmayan test için 0 girin.")
 
-        sinir_disi = ham_sure < sinir["raw_min"] or ham_sure > sinir["raw_max"]
+        sure_sekil = st.sidebar.number_input("Şekil", min_value=0.0, max_value=300.0, value=0.0, step=0.5)
+        sure_renk  = st.sidebar.number_input("Renk",  min_value=0.0, max_value=300.0, value=0.0, step=0.5)
+        sure_sayi  = st.sidebar.number_input("Sayı",  min_value=0.0, max_value=300.0, value=0.0, step=0.5)
 
-        if sinir_disi:
-            if ham_sure < sinir["raw_min"]:
-                st.warning(
-                    f"⚠️ Girilen süre ({ham_sure} sn), {test_tipi} testi norm modelinin alt sınırının "
-                    f"({sinir['raw_min']:.0f} sn) altındadır. Sonuçlar güvenilir değildir."
-                )
-            else:
-                st.warning(
-                    f"⚠️ Girilen süre ({ham_sure} sn), {test_tipi} testi norm modelinin üst sınırının "
-                    f"({sinir['raw_max']:.0f} sn) üzerindedir. Sonuçlar güvenilir değildir."
-                )
-
-        df_secili = norms[test_tipi]
-        df_yas = df_secili[df_secili['Aylik_Yas'] == yas_ay].copy()
-
-        if not df_yas.empty:
-            df_yas['raw_numeric'] = pd.to_numeric(df_yas['raw'], errors='coerce')
-            idx = (df_yas['raw_numeric'] - ham_sure).abs().idxmin()
-            sonuc_satiri = df_yas.loc[idx]
-            t_puani = sonuc_satiri['norm']
-            yuzdelik = sonuc_satiri['percentile']
-
-            if t_puani <= 30:   durum = "🔴 Kritik: Çok Yavaş Performans"
-            elif t_puani <= 40: durum = "🟡 Risk: Yavaş Otomatizasyon"
-            elif t_puani >= 60: durum = "🟢 Üstün: Çok Hızlı Otomatizasyon"
-            else:               durum = "🔵 Standart: Beklenen Gelişim Seviyesi"
-
-            st.divider()
-            st.subheader("📈 Analitik Sonuçlar")
-            col1, col2, col3 = st.columns(3)
-            col1.metric("T-Skoru", f"{t_puani:.2f}")
-            col2.metric("Persentil", f"%{yuzdelik:.1f}")
-            col3.metric("Ham Süre", f"{ham_sure} sn")
-
-            guvensizlik = " *(Model sınırı dışı — güvenilirlik düşük)*" if sinir_disi else ""
-            st.info(
-                f"**{durum}**{guvensizlik}\n\n"
-                f"Analiz: {yas_ay} aylık norm grubunda {test_tipi} testi için girilen "
-                f"{ham_sure} saniyelik performans, akran popülasyonunun "
-                f"%{yuzdelik:.1f}'inden daha efektif bir otomatizasyon hızına işaret eder."
-            )
-
-            if test_tipi != "Harf":
-                st.divider()
-                st.subheader("📚 Klasik Norm Referans Tablosu (1. Sınıf Sınır Değerleri)")
-                referans_data = {
-                    "Yaş Grubu": ["66-71 Ay", "72-77 Ay", "78-83 Ay"] * 3,
-                    "Test": ["Şekil"]*3 + ["Renk"]*3 + ["Sayı"]*3,
-                    "Çok İyi":   ["< 48.9", "< 48.6", "< 48.4", "< 46.8", "< 48.0", "< 44.6", "< 37.0", "< 40.4", "< 36.1"],
-                    "İyi":       ["48.9-62.2", "48.6-62.0", "48.4-60.7", "46.8-72.7", "48.0-69.0", "44.6-67.4", "37.0-57.1", "40.4-57.6", "36.1-53.7"],
-                    "Normal":    ["62.2-75.5", "62.0-75.4", "60.7-73.0", "72.7-98.6", "69.0-90.1", "67.4-90.1", "57.1-77.2", "57.6-74.8", "53.7-71.3"],
-                    "Zayıf":     ["75.5-88.7", "75.4-88.9", "73.0-85.2", "98.6-124.6", "90.1-111.1", "90.1-112.9", "77.2-97.3", "74.8-92.0", "71.3-88.9"],
-                    "Çok Zayıf": ["> 88.7", "> 88.9", "> 85.2", "> 124.6", "> 111.1", "> 112.9", "> 97.3", "> 92.0", "> 88.9"]
-                }
-                st.dataframe(pd.DataFrame(referans_data), use_container_width=True, hide_index=True)
+        # Harf sadece 83+ ay için
+        if yas_ay >= 83:
+            sure_harf = st.sidebar.number_input("Harf", min_value=0.0, max_value=300.0, value=0.0, step=0.5)
         else:
-            st.warning("Seçilen yaş segmenti için norm verisi bulunamadı.")
+            sure_harf = 0.0
+            st.sidebar.caption("ℹ️ Harf testi 83 ay ve üzeri için uygulanır.")
 
+        sureler = {"Şekil": sure_sekil, "Renk": sure_renk, "Sayı": sure_sayi, "Harf": sure_harf}
+        aktif_testler = [t for t, s in sureler.items() if s > 0]
+
+        if not aktif_testler:
+            st.info("👈 Sol panelden öğrenci yaşını ve test sürelerini girin.")
+        else:
+            # --- SONUÇLAR ---
+            sonuclar = {}
+            uyarilar = []
+
+            for test in aktif_testler:
+                sinir = MODEL_SINIRLARI[test]
+                sure = sureler[test]
+
+                # Yaş uyumu kontrolü
+                if yas_ay < sinir["yas_min"] or yas_ay > sinir["yas_max"]:
+                    uyarilar.append(f"**{test}:** {yas_ay} ay bu test için norm aralığı dışında.")
+                    continue
+
+                # Süre sınır kontrolü
+                if sure < sinir["raw_min"]:
+                    uyarilar.append(f"**{test}:** {sure} sn model alt sınırının ({sinir['raw_min']:.0f} sn) altında.")
+                elif sure > sinir["raw_max"]:
+                    uyarilar.append(f"**{test}:** {sure} sn model üst sınırının ({sinir['raw_max']:.0f} sn) üzerinde.")
+
+                s = sonuc_hesapla(norms[test], yas_ay, sure)
+                if s:
+                    sonuclar[test] = s
+
+            if uyarilar:
+                for u in uyarilar:
+                    st.warning(u)
+
+            if sonuclar:
+                st.divider()
+                st.subheader("📊 Test Karşılaştırması")
+
+                # Başlık satırı
+                cols = st.columns(len(sonuclar))
+                for col, test in zip(cols, sonuclar):
+                    col.markdown(f"### {test}")
+
+                # T-skor satırı
+                cols = st.columns(len(sonuclar))
+                for col, test in zip(cols, sonuclar):
+                    col.metric("T-Skoru", f"{sonuclar[test]['t']:.1f}")
+
+                # Persentil satırı
+                cols = st.columns(len(sonuclar))
+                for col, test in zip(cols, sonuclar):
+                    col.metric("Persentil", f"%{sonuclar[test]['p']:.1f}")
+
+                # Bant göstergesi satırı
+                cols = st.columns(len(sonuclar))
+                for col, test in zip(cols, sonuclar):
+                    with col:
+                        st.markdown(
+                            bant_goster(sonuclar[test]['t']),
+                            unsafe_allow_html=True
+                        )
+
+                # --- KLİNİK YORUM ---
+                st.divider()
+                st.subheader("📝 Öğretmen İçin Klinik Değerlendirme")
+                yorum = klinik_yorum_uret(sonuclar, yas_ay, list(sonuclar.keys()))
+                st.info(yorum)
+
+        # --- LOGOLAR ---
         st.write("")
         st.divider()
         _, l_col1, l_col2, l_col3, _ = st.columns([1, 2, 2, 2, 1])
