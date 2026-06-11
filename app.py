@@ -21,15 +21,28 @@ def check_password():
                 st.error("❌ Hatalı şifre.")
     return False
 
-MODEL_SINIRLARI = {
-    "Şekil": {"raw_min": 30.0,  "raw_max": 104.0, "yas_min": 70, "yas_max": 96},
-    "Renk":  {"raw_min": 32.0,  "raw_max": 183.0, "yas_min": 70, "yas_max": 96},
-    "Sayı":  {"raw_min": 25.0,  "raw_max": 111.0, "yas_min": 70, "yas_max": 96},
-    "Harf":  {"raw_min": 19.0,  "raw_max": 64.0,  "yas_min": 83, "yas_max": 96},
-}
+# Norm blokları ve model sınırları
+# Blok 1: 73-79 ay (1. sınıf)
+# Blok 2: 89-96 ay (2. sınıf)
+# 80-88 ay: yetersiz veri
+
+BLOK1_YAS = (73, 79)
+BLOK2_YAS = (89, 96)
+YETERSIZ_YAS = (80, 88)
+
+def yas_blogu(yas):
+    if BLOK1_YAS[0] <= yas <= BLOK1_YAS[1]:
+        return 1
+    elif BLOK2_YAS[0] <= yas <= BLOK2_YAS[1]:
+        return 2
+    elif YETERSIZ_YAS[0] <= yas <= YETERSIZ_YAS[1]:
+        return 0  # yetersiz veri
+    elif yas < BLOK1_YAS[0]:
+        return -1  # çok küçük
+    else:
+        return -2  # çok büyük
 
 def bant_goster(t_puani):
-    """Persentil bant göstergesi — görsel çubuk"""
     if t_puani <= 30:
         bant = "Çok Zayıf"; renk = "#ef4444"; dolu = 1
     elif t_puani <= 40:
@@ -47,11 +60,9 @@ def bant_goster(t_puani):
             kareler += f"<span style='background:{renk}; color:white; padding:2px 8px; margin:1px; border-radius:3px; font-size:0.8rem;'>■</span>"
         else:
             kareler += f"<span style='background:#e2e8f0; color:#e2e8f0; padding:2px 8px; margin:1px; border-radius:3px; font-size:0.8rem;'>■</span>"
-
     return f"{kareler} <span style='font-weight:600; color:{renk};'>{bant}</span>"
 
 def sonuc_hesapla(df, yas_ay, ham_sure):
-    """Verilen yaş ve süre için norm sonucunu döndür"""
     df_yas = df[df['Aylik_Yas'] == yas_ay].copy()
     if df_yas.empty:
         return None
@@ -61,60 +72,24 @@ def sonuc_hesapla(df, yas_ay, ham_sure):
     return {"t": satir['norm'], "p": satir['percentile']}
 
 def klinik_yorum_uret(sonuclar, yas_ay, aktif_testler):
-    """Öğretmen için Türkçe klinik yorum üret"""
     sinif = "1. sınıf" if yas_ay <= 82 else "2. sınıf"
-
-    # Performans kategorileri
-    zayif = []
-    normal = []
-    iyi = []
-
+    zayif = []; normal = []; iyi = []
     for test in aktif_testler:
         s = sonuclar.get(test)
-        if s is None:
-            continue
-        if s["t"] <= 40:
-            zayif.append(test)
-        elif s["t"] <= 60:
-            normal.append(test)
-        else:
-            iyi.append(test)
+        if s is None: continue
+        if s["t"] <= 40: zayif.append(test)
+        elif s["t"] <= 60: normal.append(test)
+        else: iyi.append(test)
 
-    satirlar = []
-
-    # Genel giriş
-    satirlar.append(f"Öğrenci, {yas_ay} aylık ({sinif}) norm grubu baz alınarak değerlendirilmiştir.")
-
-    # Güçlü alanlar
+    satirlar = [f"Öğrenci, {yas_ay} aylık ({sinif}) norm grubu baz alınarak değerlendirilmiştir."]
     if iyi:
-        satirlar.append(
-            f"**Güçlü alanlar:** {', '.join(iyi)} testlerinde akranlarının üzerinde "
-            f"bir otomatizasyon hızı sergilemiştir."
-        )
-
-    # Normal alanlar
+        satirlar.append(f"**Güçlü alanlar:** {', '.join(iyi)} testlerinde akranlarının üzerinde bir otomatizasyon hızı sergilemiştir.")
     if normal:
-        satirlar.append(
-            f"**Beklenen düzey:** {', '.join(normal)} testlerinde yaşıtlarıyla "
-            f"uyumlu bir performans göstermiştir."
-        )
-
-    # Zayıf alanlar
+        satirlar.append(f"**Beklenen düzey:** {', '.join(normal)} testlerinde yaşıtlarıyla uyumlu bir performans göstermiştir.")
     if zayif:
-        satirlar.append(
-            f"**Dikkat gerektiren alanlar:** {', '.join(zayif)} testlerinde akranlarına "
-            f"kıyasla yavaş bir otomatizasyon hızı gözlemlenmiştir. "
-            f"Bu durum okuma güçlüğü riskine işaret edebilir; "
-            f"uzman değerlendirmesi önerilir."
-        )
-
-    # Tüm testler normal veya iyi ise
+        satirlar.append(f"**Dikkat gerektiren alanlar:** {', '.join(zayif)} testlerinde akranlarına kıyasla yavaş bir otomatizasyon hızı gözlemlenmiştir. Bu durum okuma güçlüğü riskine işaret edebilir; uzman değerlendirmesi önerilir.")
     if not zayif:
-        satirlar.append(
-            "Genel değerlendirmede öğrencinin RAN performansı yaş düzeyiyle uyumludur. "
-            "Herhangi bir müdahale planlamasına gerek görülmemektedir."
-        )
-
+        satirlar.append("Genel değerlendirmede öğrencinin RAN performansı yaş düzeyiyle uyumludur. Herhangi bir müdahale planlamasına gerek görülmemektedir.")
     return "\n\n".join(satirlar)
 
 if check_password():
@@ -142,106 +117,122 @@ if check_password():
     def load_data():
         try:
             return {
-                "Şekil": pd.read_csv("RAN_Sekil_Tum_Aylar_Norm_Tablosu.csv"),
-                "Renk":  pd.read_csv("RAN_Renk_Tum_Aylar_Norm_Tablosu.csv"),
-                "Sayı":  pd.read_csv("RAN_Sayi_Tum_Aylar_Norm_Tablosu.csv"),
-                "Harf":  pd.read_csv("RAN_Harf_Tum_Aylar_Norm_Tablosu.csv"),
+                "Sekil_1": pd.read_csv("RAN_Sekil_Sinif1_Norm.csv"),
+                "Renk_1":  pd.read_csv("RAN_Renk_Sinif1_Norm.csv"),
+                "Sayi_1":  pd.read_csv("RAN_Sayi_Sinif1_Norm.csv"),
+                "Sekil_2": pd.read_csv("RAN_Sekil_Sinif2_Norm.csv"),
+                "Renk_2":  pd.read_csv("RAN_Renk_Sinif2_Norm.csv"),
+                "Sayi_2":  pd.read_csv("RAN_Sayi_Sinif2_Norm.csv"),
+                "Harf_2":  pd.read_csv("RAN_Harf_Sinif2_Norm.csv"),
             }
-        except Exception:
-            st.error("Sistem Hatası: Norm veritabanı yüklenemedi!")
+        except Exception as e:
+            st.error(f"Sistem Hatası: Norm veritabanı yüklenemedi! {e}")
             return None
 
     norms = load_data()
 
     if norms:
-        # --- YAN PANEL ---
         st.sidebar.subheader("⚙️ Parametreler")
-
         yas_ay = st.sidebar.slider("Öğrenci Yaşı (Ay)", 70, 96, 78)
 
-        st.sidebar.divider()
-        st.sidebar.subheader("⏱️ Test Süreleri (Saniye)")
-        st.sidebar.caption("Uygulanmayan test için 0 girin.")
+        blok = yas_blogu(yas_ay)
 
-        sure_sekil = st.sidebar.number_input("Şekil", min_value=0.0, max_value=300.0, value=0.0, step=0.5)
-        sure_renk  = st.sidebar.number_input("Renk",  min_value=0.0, max_value=300.0, value=0.0, step=0.5)
-        sure_sayi  = st.sidebar.number_input("Sayı",  min_value=0.0, max_value=300.0, value=0.0, step=0.5)
-
-        # Harf sadece 83+ ay için
-        if yas_ay >= 83:
-            sure_harf = st.sidebar.number_input("Harf", min_value=0.0, max_value=300.0, value=0.0, step=0.5)
+        # Yaş grubu bilgisi
+        if blok == 1:
+            st.sidebar.success(f"✓ 1. Sınıf norm grubu ({BLOK1_YAS[0]}-{BLOK1_YAS[1]} ay)")
+        elif blok == 2:
+            st.sidebar.success(f"✓ 2. Sınıf norm grubu ({BLOK2_YAS[0]}-{BLOK2_YAS[1]} ay)")
+        elif blok == 0:
+            st.sidebar.warning(f"⚠️ {yas_ay} ay için norm verisi yetersiz ({YETERSIZ_YAS[0]}-{YETERSIZ_YAS[1]} ay arası güvenilir veri bulunmamaktadır).")
+        elif blok == -1:
+            st.sidebar.warning(f"⚠️ {yas_ay} ay norm alt sınırının altında (min: {BLOK1_YAS[0]} ay).")
         else:
-            sure_harf = 0.0
-            st.sidebar.caption("ℹ️ Harf testi 83 ay ve üzeri için uygulanır.")
+            st.sidebar.warning(f"⚠️ {yas_ay} ay norm üst sınırının üzerinde (max: {BLOK2_YAS[1]} ay).")
 
-        sureler = {"Şekil": sure_sekil, "Renk": sure_renk, "Sayı": sure_sayi, "Harf": sure_harf}
-        aktif_testler = [t for t, s in sureler.items() if s > 0]
+        if blok in (1, 2):
+            st.sidebar.divider()
+            st.sidebar.subheader("⏱️ Test Süreleri (Saniye)")
+            st.sidebar.caption("Uygulanmayan test için 0 girin.")
 
-        if not aktif_testler:
-            st.info("👈 Sol panelden öğrenci yaşını ve test sürelerini girin.")
-        else:
-            # --- SONUÇLAR ---
-            sonuclar = {}
-            uyarilar = []
+            suffix = str(blok)
+            sure_sekil = st.sidebar.number_input("Şekil", min_value=0.0, max_value=300.0, value=0.0, step=0.5)
+            sure_renk  = st.sidebar.number_input("Renk",  min_value=0.0, max_value=300.0, value=0.0, step=0.5)
+            sure_sayi  = st.sidebar.number_input("Sayı",  min_value=0.0, max_value=300.0, value=0.0, step=0.5)
 
-            for test in aktif_testler:
-                sinir = MODEL_SINIRLARI[test]
-                sure = sureler[test]
+            if blok == 2:
+                sure_harf = st.sidebar.number_input("Harf", min_value=0.0, max_value=300.0, value=0.0, step=0.5)
+            else:
+                sure_harf = 0.0
+                st.sidebar.caption("ℹ️ Harf testi 2. sınıf norm grubunda uygulanır.")
 
-                # Yaş uyumu kontrolü
-                if yas_ay < sinir["yas_min"] or yas_ay > sinir["yas_max"]:
-                    uyarilar.append(f"**{test}:** {yas_ay} ay bu test için norm aralığı dışında.")
-                    continue
+            sureler = {
+                "Şekil": (sure_sekil, f"Sekil_{suffix}"),
+                "Renk":  (sure_renk,  f"Renk_{suffix}"),
+                "Sayı":  (sure_sayi,  f"Sayi_{suffix}"),
+            }
+            if blok == 2:
+                sureler["Harf"] = (sure_harf, f"Harf_{suffix}")
 
-                # Süre sınır kontrolü
-                if sure < sinir["raw_min"]:
-                    uyarilar.append(f"**{test}:** {sure} sn model alt sınırının ({sinir['raw_min']:.0f} sn) altında.")
-                elif sure > sinir["raw_max"]:
-                    uyarilar.append(f"**{test}:** {sure} sn model üst sınırının ({sinir['raw_max']:.0f} sn) üzerinde.")
+            aktif = {t: (s, k) for t, (s, k) in sureler.items() if s > 0}
 
-                s = sonuc_hesapla(norms[test], yas_ay, sure)
-                if s:
-                    sonuclar[test] = s
+            if not aktif:
+                st.info("👈 Sol panelden öğrenci yaşını ve test sürelerini girin.")
+            else:
+                sonuclar = {}
+                uyarilar = []
 
-            if uyarilar:
+                for test, (sure, norm_key) in aktif.items():
+                    df_norm = norms[norm_key]
+                    raw_min = df_norm.raw.min()
+                    raw_max = df_norm.raw.max()
+
+                    if sure < raw_min:
+                        uyarilar.append(f"**{test}:** {sure} sn model alt sınırının ({raw_min:.0f} sn) altında.")
+                    elif sure > raw_max:
+                        uyarilar.append(f"**{test}:** {sure} sn model üst sınırının ({raw_max:.0f} sn) üzerinde.")
+
+                    s = sonuc_hesapla(df_norm, yas_ay, sure)
+                    if s:
+                        sonuclar[test] = s
+
                 for u in uyarilar:
                     st.warning(u)
 
-            if sonuclar:
-                st.divider()
-                st.subheader("📊 Test Karşılaştırması")
+                if sonuclar:
+                    st.divider()
+                    st.subheader("📊 Test Karşılaştırması")
 
-                # Başlık satırı
-                cols = st.columns(len(sonuclar))
-                for col, test in zip(cols, sonuclar):
-                    col.markdown(f"### {test}")
+                    cols = st.columns(len(sonuclar))
+                    for col, test in zip(cols, sonuclar):
+                        col.markdown(f"### {test}")
 
-                # T-skor satırı
-                cols = st.columns(len(sonuclar))
-                for col, test in zip(cols, sonuclar):
-                    col.metric("T-Skoru", f"{sonuclar[test]['t']:.1f}")
+                    cols = st.columns(len(sonuclar))
+                    for col, test in zip(cols, sonuclar):
+                        col.metric("T-Skoru", f"{sonuclar[test]['t']:.1f}")
 
-                # Persentil satırı
-                cols = st.columns(len(sonuclar))
-                for col, test in zip(cols, sonuclar):
-                    col.metric("Persentil", f"%{sonuclar[test]['p']:.1f}")
+                    cols = st.columns(len(sonuclar))
+                    for col, test in zip(cols, sonuclar):
+                        col.metric("Persentil", f"%{sonuclar[test]['p']:.1f}")
 
-                # Bant göstergesi satırı
-                cols = st.columns(len(sonuclar))
-                for col, test in zip(cols, sonuclar):
-                    with col:
-                        st.markdown(
-                            bant_goster(sonuclar[test]['t']),
-                            unsafe_allow_html=True
-                        )
+                    cols = st.columns(len(sonuclar))
+                    for col, test in zip(cols, sonuclar):
+                        with col:
+                            st.markdown(bant_goster(sonuclar[test]['t']), unsafe_allow_html=True)
 
-                # --- KLİNİK YORUM ---
-                st.divider()
-                st.subheader("📝 Öğretmen İçin Klinik Değerlendirme")
-                yorum = klinik_yorum_uret(sonuclar, yas_ay, list(sonuclar.keys()))
-                st.info(yorum)
+                    st.divider()
+                    st.subheader("📝 Öğretmen İçin Klinik Değerlendirme")
+                    yorum = klinik_yorum_uret(sonuclar, yas_ay, list(sonuclar.keys()))
+                    st.info(yorum)
+        else:
+            if blok == 0:
+                st.warning(
+                    f"**{yas_ay} ay için norm verisi yetersizdir.**\n\n"
+                    f"Mevcut normlar **{BLOK1_YAS[0]}-{BLOK1_YAS[1]} ay** (1. sınıf) ve "
+                    f"**{BLOK2_YAS[0]}-{BLOK2_YAS[1]} ay** (2. sınıf) grupları için geçerlidir. "
+                    f"{YETERSIZ_YAS[0]}-{YETERSIZ_YAS[1]} ay aralığında örneklem yetersizliği nedeniyle "
+                    f"güvenilir norm üretilememektedir."
+                )
 
-        # --- LOGOLAR ---
         st.write("")
         st.divider()
         _, l_col1, l_col2, l_col3, _ = st.columns([1, 2, 2, 2, 1])
@@ -263,8 +254,9 @@ if check_password():
         )
         st.markdown(
             "<div style='text-align: center; color: gray; font-size: 0.85rem;'>"
-            "Bu normlama sistemi, Lenhard, Lenhard & Maurice (2018) tarafından R Statistics için "
-            "geliştirilen cNORM paketi ile sürekli normlama modellemesi (Taylor Polinomu $k=2$) "
-            "kullanılarak yapılandırılmıştır.</div>",
+            "Bu normlama sistemi, sürekli normlama yaklaşımı benimsenerek Python ortamında "
+            "polinom regresyon modellemesi (derece=3) ile geliştirilmiştir. "
+            "Ham skorlar yaş grubuna göre Hazen formülüyle persentile dönüştürülmüş "
+            "ve T-skorları hesaplanmıştır (Keskin &amp; Karadağ, 2025).</div>",
             unsafe_allow_html=True
         )
