@@ -1,6 +1,12 @@
 import streamlit as st
 import pandas as pd
 import os
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy import stats
+from io import BytesIO
 
 st.set_page_config(page_title="RAN Analytics", layout="wide")
 
@@ -62,27 +68,49 @@ def bant_goster(t_puani):
             kareler += f"<span style='background:#e2e8f0; color:#e2e8f0; padding:2px 8px; margin:1px; border-radius:3px; font-size:0.8rem;'>■</span>"
     return f"{kareler} <span style='font-weight:600; color:{renk};'>{bant}</span>"
 
-def percentile_grafik(p):
-    """
-    Yatay persentil çubuğu — 0-100 arası, öğrencinin konumu işaretli.
-    p: bu öğrencinin performans yüzdeliği (yüksek = iyi)
-    """
-    p = max(0, min(100, p))
+def t_skoru_grafigi(t_puani, baslik):
+    """Normal dağılım eğrisi üzerinde T-skoru konum grafiği"""
+    fig, ax = plt.subplots(figsize=(4.2, 2.0))
 
-    html = f"""
-    <div style='margin-top:8px; margin-bottom:4px;'>
-        <div style='position:relative; height:14px; border-radius:7px;
-                    background:linear-gradient(to right, #ef4444 0%, #f97316 16%, #3b82f6 50%, #22c55e 84%, #16a34a 100%);'>
-            <div style='position:absolute; left:{p}%; top:-4px; transform:translateX(-50%);
-                        width:0; height:0; border-left:6px solid transparent;
-                        border-right:6px solid transparent; border-top:8px solid #1e293b;'></div>
-        </div>
-        <div style='display:flex; justify-content:space-between; font-size:0.7rem; color:#94a3b8; margin-top:2px;'>
-            <span>0</span><span>25</span><span>50</span><span>75</span><span>100</span>
-        </div>
-    </div>
-    """
-    return html
+    x = np.linspace(10, 90, 500)
+    y = stats.norm.pdf(x, 50, 10)
+
+    bantlar = [
+        (10, 30, '#ef4444'),
+        (30, 40, '#f97316'),
+        (40, 60, '#3b82f6'),
+        (60, 70, '#22c55e'),
+        (70, 90, '#16a34a'),
+    ]
+
+    for lo, hi, renk in bantlar:
+        mask = (x >= lo) & (x <= hi)
+        ax.fill_between(x[mask], 0, y[mask], color=renk, alpha=0.35)
+
+    ax.plot(x, y, color='#475569', linewidth=1)
+
+    t_clamped = max(10, min(90, t_puani))
+    y_ogrenci = stats.norm.pdf(t_clamped, 50, 10)
+    ax.axvline(t_clamped, color='#1e293b', linewidth=2)
+    ax.plot(t_clamped, y_ogrenci, marker='v', color='#1e293b', markersize=10, zorder=5)
+    ax.text(t_clamped, y_ogrenci + max(y)*0.08, f'{t_puani:.1f}',
+            ha='center', fontsize=10, fontweight='bold', color='#1e293b')
+
+    ax.set_xlim(10, 90)
+    ax.set_ylim(0, max(y)*1.30)
+    ax.set_xticks([10, 30, 40, 50, 60, 70, 90])
+    ax.set_yticks([])
+    ax.spines[['left','top','right']].set_visible(False)
+    ax.tick_params(axis='x', labelsize=7)
+    ax.set_xlabel('T-Skoru', fontsize=8)
+
+    plt.tight_layout()
+
+    buf = BytesIO()
+    fig.savefig(buf, format='png', dpi=110, bbox_inches='tight')
+    plt.close(fig)
+    buf.seek(0)
+    return buf
 
 def sonuc_hesapla(df, yas_ay, ham_sure):
     df_yas = df[df['Aylik_Yas'] == yas_ay].copy()
@@ -240,7 +268,8 @@ if check_password():
                     for col, test in zip(cols, sonuclar):
                         with col:
                             st.markdown(bant_goster(sonuclar[test]['t']), unsafe_allow_html=True)
-                            st.markdown(percentile_grafik(sonuclar[test]['p']), unsafe_allow_html=True)
+                            grafik = t_skoru_grafigi(sonuclar[test]['t'], test)
+                            st.image(grafik, use_container_width=True)
 
                     st.divider()
                     st.subheader("📝 Öğretmen İçin Klinik Değerlendirme")
