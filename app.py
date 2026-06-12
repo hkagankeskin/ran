@@ -129,7 +129,7 @@ def sonuc_hesapla(df, yas_ay, ham_sure):
     satir = df_yas.loc[idx]
     return {"t": satir['norm'], "p": satir['percentile']}
 
-def klinik_yorum_uret(sonuclar, yas_ay, aktif_testler):
+def egitsel_yorum_uret(sonuclar, yas_ay, aktif_testler):
     sinif = "1. sınıf" if yas_ay <= 82 else "2. sınıf"
 
     satirlar = [f"Öğrenci, {yas_ay} aylık ({sinif}) norm grubu baz alınarak değerlendirilmiştir."]
@@ -194,7 +194,7 @@ if check_password():
             <h1>RAN Analytics System</h1>
         </div>
         """, unsafe_allow_html=True)
-    st.write("Hızlı Otomatik İsimlendirme (RAN) Klinik Karar Destek Aracı")
+    st.write("Hızlı Otomatik İsimlendirme (RAN) Eğitsel Karar Destek Aracı")
 
     @st.cache_data
     def load_data():
@@ -305,8 +305,8 @@ if check_password():
                             st.image(grafik, use_container_width=True)
 
                     st.divider()
-                    st.subheader("📝 Öğretmen İçin Klinik Değerlendirme")
-                    yorum = klinik_yorum_uret(sonuclar, yas_ay, list(sonuclar.keys()))
+                    st.subheader("📝 Öğretmen İçin Eğitsel Değerlendirme")
+                    yorum = egitsel_yorum_uret(sonuclar, yas_ay, list(sonuclar.keys()))
                     st.info(yorum)
         else:
             if blok == 0:
