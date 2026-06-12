@@ -68,8 +68,8 @@ def bant_goster(t_puani):
             kareler += f"<span style='background:#e2e8f0; color:#e2e8f0; padding:2px 8px; margin:1px; border-radius:3px; font-size:0.8rem;'>■</span>"
     return f"{kareler} <span style='font-weight:600; color:{renk};'>{bant}</span>"
 
-def t_skoru_grafigi(t_puani, baslik):
-    """Normal dağılım eğrisi üzerinde T-skoru konum grafiği"""
+def t_skoru_grafigi(t_puani, persentil, baslik):
+    """Normal dağılım eğrisi üzerinde T-skoru konumu — performansa göre renklendirilmiş işaretçi"""
     fig, ax = plt.subplots(figsize=(4.2, 2.0))
 
     x = np.linspace(10, 90, 500)
@@ -82,19 +82,27 @@ def t_skoru_grafigi(t_puani, baslik):
         (60, 70, '#22c55e'),
         (70, 90, '#16a34a'),
     ]
-
     for lo, hi, renk in bantlar:
         mask = (x >= lo) & (x <= hi)
-        ax.fill_between(x[mask], 0, y[mask], color=renk, alpha=0.35)
+        ax.fill_between(x[mask], 0, y[mask], color=renk, alpha=0.25)
 
     ax.plot(x, y, color='#475569', linewidth=1)
 
+    # Performansa göre işaretçi rengi: iyi=yeşil, orta=sarı, kötü=kırmızı
+    if t_puani >= 60:
+        marker_renk = '#16a34a'
+    elif t_puani <= 40:
+        marker_renk = '#ef4444'
+    else:
+        marker_renk = '#eab308'
+
     t_clamped = max(10, min(90, t_puani))
     y_ogrenci = stats.norm.pdf(t_clamped, 50, 10)
-    ax.axvline(t_clamped, color='#1e293b', linewidth=2)
-    ax.plot(t_clamped, y_ogrenci, marker='v', color='#1e293b', markersize=10, zorder=5)
-    ax.text(t_clamped, y_ogrenci + max(y)*0.08, f'{t_puani:.1f}',
-            ha='center', fontsize=10, fontweight='bold', color='#1e293b')
+    ax.axvline(t_clamped, color=marker_renk, linewidth=2.5)
+    ax.plot(t_clamped, y_ogrenci, marker='v', color=marker_renk, markersize=11, zorder=5,
+            markeredgecolor='#1e293b', markeredgewidth=0.8)
+    ax.text(t_clamped, y_ogrenci + max(y)*0.10, f'T={t_puani:.1f}  (%{persentil:.1f})',
+            ha='center', fontsize=10, fontweight='bold', color=marker_renk)
 
     ax.set_xlim(10, 90)
     ax.set_ylim(0, max(y)*1.30)
@@ -123,23 +131,48 @@ def sonuc_hesapla(df, yas_ay, ham_sure):
 
 def klinik_yorum_uret(sonuclar, yas_ay, aktif_testler):
     sinif = "1. sınıf" if yas_ay <= 82 else "2. sınıf"
-    zayif = []; normal = []; iyi = []
+
+    satirlar = [f"Öğrenci, {yas_ay} aylık ({sinif}) norm grubu baz alınarak değerlendirilmiştir."]
+
+    # Her test için persentil bazlı tekil yorum
+    satirlar.append("**Test Bazında Değerlendirme:**")
     for test in aktif_testler:
         s = sonuclar.get(test)
         if s is None: continue
-        if s["t"] <= 40: zayif.append(test)
-        elif s["t"] <= 60: normal.append(test)
-        else: iyi.append(test)
+        p = s["p"]
+        t = s["t"]
 
-    satirlar = [f"Öğrenci, {yas_ay} aylık ({sinif}) norm grubu baz alınarak değerlendirilmiştir."]
+        if t <= 40:
+            satirlar.append(
+                f"- **{test}:** Bu öğrenci, akranlarının yalnızca **%{p:.1f}**'inden daha iyidir. "
+                f"Bu sonuç, akranların büyük çoğunluğunun bu öğrenciden daha hızlı bir "
+                f"otomatizasyon hızına sahip olduğunu göstermektedir."
+            )
+        elif t <= 60:
+            satirlar.append(
+                f"- **{test}:** Bu öğrenci, akranlarının **%{p:.1f}**'inden daha iyidir; "
+                f"yaş grubunun beklenen düzeyiyle uyumlu bir performans göstermiştir."
+            )
+        else:
+            satirlar.append(
+                f"- **{test}:** Bu öğrenci, akranlarının **%{p:.1f}**'inden daha iyidir. "
+                f"Bu sonuç, akranlarına kıyasla belirgin şekilde üstün bir otomatizasyon "
+                f"hızına işaret etmektedir."
+            )
+
+    # Genel özet
+    zayif = [t for t in aktif_testler if sonuclar.get(t) and sonuclar[t]["t"] <= 40]
+    iyi   = [t for t in aktif_testler if sonuclar.get(t) and sonuclar[t]["t"] > 60]
+
+    satirlar.append("")
+    satirlar.append("**Genel Özet:**")
     if iyi:
         satirlar.append(f"**Güçlü alanlar:** {', '.join(iyi)} testlerinde akranlarının üzerinde bir otomatizasyon hızı sergilemiştir.")
-    if normal:
-        satirlar.append(f"**Beklenen düzey:** {', '.join(normal)} testlerinde yaşıtlarıyla uyumlu bir performans göstermiştir.")
     if zayif:
         satirlar.append(f"**Dikkat gerektiren alanlar:** {', '.join(zayif)} testlerinde akranlarına kıyasla yavaş bir otomatizasyon hızı gözlemlenmiştir. Bu durum okuma güçlüğü riskine işaret edebilir; uzman değerlendirmesi önerilir.")
     if not zayif:
-        satirlar.append("Genel değerlendirmede öğrencinin RAN performansı yaş düzeyiyle uyumludur. Herhangi bir müdahale planlamasına gerek görülmemektedir.")
+        satirlar.append("Genel değerlendirmede öğrencinin RAN performansı yaş düzeyiyle uyumlu veya üzerindedir. Herhangi bir müdahale planlamasına gerek görülmemektedir.")
+
     return "\n\n".join(satirlar)
 
 if check_password():
@@ -268,7 +301,7 @@ if check_password():
                     for col, test in zip(cols, sonuclar):
                         with col:
                             st.markdown(bant_goster(sonuclar[test]['t']), unsafe_allow_html=True)
-                            grafik = t_skoru_grafigi(sonuclar[test]['t'], test)
+                            grafik = t_skoru_grafigi(sonuclar[test]['t'], sonuclar[test]['p'], test)
                             st.image(grafik, use_container_width=True)
 
                     st.divider()
