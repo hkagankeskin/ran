@@ -338,10 +338,14 @@ if check_password():
             unsafe_allow_html=True
         )
         st.markdown(
-            "<div style='text-align: center; color: gray; font-size: 0.85rem;'>"
-            "Bu normlama sistemi, sürekli normlama yaklaşımı benimsenerek Python ortamında "
-            "polinom regresyon modellemesi (derece=3) ile geliştirilmiştir. "
-            "Ham skorlar yaş grubuna göre Hazen formülüyle persentile dönüştürülmüş "
-            "ve T-skorları hesaplanmıştır (Keskin &amp; Karadağ, 2025).</div>",
+            "<div style='text-align: center; color: gray; font-size: 0.80rem;'>"
+            "Bu normlama sistemi, sürekli normlama (continuous norming) yaklaşımı benimsenerek "
+            "geliştirilmiştir. Ham puanlar, yaş gruplarına göre Hazen düzeltmesi "
+            "(p = (sıra − 0.5) / n) ile persentil değerlerine dönüştürülmüş; bu persentiller "
+            "standart normal dağılımın ters kümülatif dağılım fonksiyonu (inverse CDF) "
+            "kullanılarak T-puanlarına (M = 50, SD = 10) çevrilmiştir. Yaş ve ham puan "
+            "arasındaki ilişki, üçüncü derece polinom regresyon (Ridge düzenlileştirme, "
+            "α = 1.0) ile modellenmiş ve monotonluk kısıtı uygulanmıştır "
+            "(Keskin &amp; Karadağ, 2026).</div>",
             unsafe_allow_html=True
         )
