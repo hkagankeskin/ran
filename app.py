@@ -62,6 +62,28 @@ def bant_goster(t_puani):
             kareler += f"<span style='background:#e2e8f0; color:#e2e8f0; padding:2px 8px; margin:1px; border-radius:3px; font-size:0.8rem;'>■</span>"
     return f"{kareler} <span style='font-weight:600; color:{renk};'>{bant}</span>"
 
+def percentile_grafik(p):
+    """
+    Yatay persentil çubuğu — 0-100 arası, öğrencinin konumu işaretli.
+    p: bu öğrencinin performans yüzdeliği (yüksek = iyi)
+    """
+    p = max(0, min(100, p))
+
+    html = f"""
+    <div style='margin-top:8px; margin-bottom:4px;'>
+        <div style='position:relative; height:14px; border-radius:7px;
+                    background:linear-gradient(to right, #ef4444 0%, #f97316 16%, #3b82f6 50%, #22c55e 84%, #16a34a 100%);'>
+            <div style='position:absolute; left:{p}%; top:-4px; transform:translateX(-50%);
+                        width:0; height:0; border-left:6px solid transparent;
+                        border-right:6px solid transparent; border-top:8px solid #1e293b;'></div>
+        </div>
+        <div style='display:flex; justify-content:space-between; font-size:0.7rem; color:#94a3b8; margin-top:2px;'>
+            <span>0</span><span>25</span><span>50</span><span>75</span><span>100</span>
+        </div>
+    </div>
+    """
+    return html
+
 def sonuc_hesapla(df, yas_ay, ham_sure):
     df_yas = df[df['Aylik_Yas'] == yas_ay].copy()
     if df_yas.empty:
@@ -218,6 +240,7 @@ if check_password():
                     for col, test in zip(cols, sonuclar):
                         with col:
                             st.markdown(bant_goster(sonuclar[test]['t']), unsafe_allow_html=True)
+                            st.markdown(percentile_grafik(sonuclar[test]['p']), unsafe_allow_html=True)
 
                     st.divider()
                     st.subheader("📝 Öğretmen İçin Klinik Değerlendirme")
